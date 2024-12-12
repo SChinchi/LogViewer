@@ -1,0 +1,52 @@
+import 'package:flutter/material.dart';
+
+import '../../constants.dart';
+import 'tabs/summary_tab.dart';
+import 'tabs/modlist_tab.dart';
+import 'tabs/console_tab.dart';
+
+class ConsoleScreen extends StatefulWidget {
+  const ConsoleScreen({super.key});
+
+  @override
+  State<ConsoleScreen> createState() => _ConsoleScreenState();
+}
+
+class _ConsoleScreenState extends State<ConsoleScreen> with SingleTickerProviderStateMixin {
+  late TabController tabController;
+
+  @override
+  void initState() {
+    tabController = TabController(length: 3, vsync: this);
+    tabController.addListener(() {
+      setState(() {});
+    });
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+            toolbarHeight: 30,
+            backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
+            bottom: TabBar(
+                controller: tabController,
+                labelColor: Colors.white,
+                indicator: const UnderlineTabIndicator(borderSide: BorderSide(color: Colors.white, width: 2.0)),
+                tabs: const [
+                  Tab(text: Constants.titleTab_1),
+                  Tab(text: Constants.titleTab_2),
+                  Tab(text: Constants.titleTab_3),
+                ]
+            )
+        ),
+        body: TabBarView(controller: tabController, children: [
+          SummaryPage(tabController: tabController),
+          ModListPage(tabController: tabController),
+          ConsolePage(tabController: tabController),
+        ])
+    );
+  }
+}
