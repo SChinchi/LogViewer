@@ -91,9 +91,8 @@ class Logger
   }
 
   static bool _passesFilter(Event event) {
-    if (event.severity <= _severity) {
-      return event.repeat >= _repeatThreshold &&
-          (_searchPattern.pattern.isEmpty || event.fullString.contains(_searchPattern));
+    if (event.severity <= _severity && event.repeat >= _repeatThreshold) {
+      return _searchPattern.pattern.isEmpty || event.fullString.contains(_searchPattern);
     }
     return false;
   }
@@ -167,14 +166,22 @@ class Logger
   static void setSearchString(String s) {
     s = s.toLowerCase();
     var repeat = RegExp('^repeat:(\\d+)\\s*').firstMatch(s);
+    var hasThresholdChanged = false;
     if (repeat != null) {
-      _repeatThreshold = int.parse(repeat.group(1)!);
+      var value = int.parse(repeat.group(1)!);
+      if (value != _repeatThreshold) {
+        hasThresholdChanged = true;
+      }
+      _repeatThreshold = value;
       s = s.substring(repeat.group(0)!.length);
     }
     else {
+      if (_repeatThreshold != 0) {
+        hasThresholdChanged = true;
+      }
       _repeatThreshold = 0;
     }
-    if (s != _searchPattern.pattern) {
+    if (s != _searchPattern.pattern || hasThresholdChanged) {
       try {
         _searchPattern = RegExp(s, caseSensitive: false);
         _recalculateFilteredEvents();
