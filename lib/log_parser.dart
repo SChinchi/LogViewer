@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'constants.dart';
 
-final _regExp = RegExp('\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
+final _regExp = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
 
 class Mod {
   String guid;
@@ -34,15 +34,17 @@ class Event {
   late String source;
   late String string;
   late String fullString;
+  late String fullStringNoPrefix;
   late Color color;
   int repeat = 0;
   String? modName;
 
   Event(String s, RegExpMatch match) {
-    severity = Constants.logSeverity.indexOf(match.group(1)!);
-    source = match.group(2)!;
-    string = match.group(3)!;
+    severity = Constants.logSeverity.indexOf(match.group(2)!);
+    source = match.group(3)!;
+    string = match.group(4)!;
     fullString = s;
+    fullStringNoPrefix = s.substring(match.group(1)!.length);
     if (severity < 2) {
       color = Colors.red;
     }
@@ -76,7 +78,8 @@ class Logger
       return;
     }
     // Compress repeated messages for the console
-    if (events.isNotEmpty && events.last.fullString == s) {
+    var sNoPrefix = s.substring(match.group(1)!.length);
+    if (events.isNotEmpty && events.last.fullStringNoPrefix == sNoPrefix) {
       events.last.repeat++;
       return;
     }
