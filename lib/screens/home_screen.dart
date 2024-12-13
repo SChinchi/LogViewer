@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
+import 'package:log_viewer/main.dart';
 import 'console/console_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,6 +17,16 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   FilePickerResult? result;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (MyApp.args.isNotEmpty && Logger.parseFile(MyApp.args[0]) && Logger.events.isNotEmpty) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

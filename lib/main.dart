@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 
 import 'screens/home_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+void main(List<String> args) {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(MyApp(args: args));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  static late List<String> args;
+
+  MyApp({super.key, args}) {
+    MyApp.args = args;
+  }
 
   @override
   Widget build(BuildContext context) {
