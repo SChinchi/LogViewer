@@ -54,7 +54,7 @@ class Event {
     else {
       color = Colors.white;
     }
-    var modPattern = RegExp('^TS Manifest: (.*)').firstMatch(match.group(4)!);
+    var modPattern = RegExp(r'^TS Manifest: (.*)').firstMatch(match.group(4)!);
     if (modPattern != null) {
       modName = modPattern.group(1);
     }
@@ -154,11 +154,12 @@ class Logger
         _addEvent(sb.toString().trimRight());
       }
 
+      var lastSummaryLine = RegExp(r'^\d+ plugins to load$');
       for (var event in events) {
-        if (event.string == Constants.endOfSummary) {
+        summary.add(event.string);
+        if (lastSummaryLine.firstMatch(event.string) != null) {
           break;
         }
-        summary.add(event.string);
       }
       return true;
     }
@@ -177,7 +178,7 @@ class Logger
 
   static void setSearchString(String s) {
     s = s.toLowerCase();
-    var repeat = RegExp('^repeat:(\\d+)\\s*').firstMatch(s);
+    var repeat = RegExp(r'^repeat:(\d+)\s*').firstMatch(s);
     var hasThresholdChanged = false;
     if (repeat != null) {
       var value = int.parse(repeat.group(1)!);
