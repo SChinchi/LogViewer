@@ -55,7 +55,7 @@ class _HomePageState extends State<FutureBuilderExample> {
                 itemCount: Logger.mods.length,
                 itemBuilder: (context, index) {
                   var mod = Logger.mods[index];
-                  return Text(
+                  return SelectableText(
                     mod.guid,
                     textAlign: TextAlign.left,
                     style: TextStyle(

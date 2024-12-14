@@ -46,7 +46,7 @@ class _SliderExampleState extends State<SliderExample> {
                         child: TextField(
                           style: const TextStyle(color: Colors.white, fontSize: 12),
                             decoration: const InputDecoration(
-                              labelText: 'Search',
+                              labelText: Constants.searchText,
                               border: OutlineInputBorder(),
                             ),
                             onChanged: (text) {
@@ -98,21 +98,11 @@ class _SliderExampleState extends State<SliderExample> {
               controller: myScrollController,
               itemCount: _loggedEvents.length,
               itemBuilder: (context, index) =>
-              /*
-                  Card(
-                    color: Colors.black,
-                    child: Text(
-                      _loggedEvents[index].fullString,
-                      textAlign: TextAlign.left,
-                      style: TextStyle(color: _loggedEvents[index].color),
-                    ),
-                  ),
-               */
               Stack(
                   children: [
                     Card(
                       color: Colors.black,
-                      child: Text(
+                      child: SelectableText(
                         _loggedEvents[index].fullString,
                         textAlign: TextAlign.left,
                         style: TextStyle(color: _loggedEvents[index].color),

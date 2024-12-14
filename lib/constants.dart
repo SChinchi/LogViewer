@@ -7,6 +7,7 @@ class Constants {
   static const String dropText = 'Drop file';
   static const String loadButton = 'Open file';
   static const String parseError = 'Failed to parse file; empty or not a log.';
+  static const String searchText = 'Search';
 
   static const List<String> logSeverity = [
     "Fatal",
