@@ -4,6 +4,7 @@ import '../../constants.dart';
 import 'tabs/summary_tab.dart';
 import 'tabs/modlist_tab.dart';
 import 'tabs/console_tab.dart';
+import 'tabs/diagnostics_tabs.dart';
 
 class ConsoleScreen extends StatefulWidget {
   const ConsoleScreen({super.key});
@@ -17,7 +18,7 @@ class _ConsoleScreenState extends State<ConsoleScreen> with SingleTickerProvider
 
   @override
   void initState() {
-    tabController = TabController(length: 3, vsync: this);
+    tabController = TabController(length: 4, vsync: this);
     tabController.addListener(() {
       setState(() {});
     });
@@ -39,6 +40,7 @@ class _ConsoleScreenState extends State<ConsoleScreen> with SingleTickerProvider
                   Tab(text: Constants.titleTab_1),
                   Tab(text: Constants.titleTab_2),
                   Tab(text: Constants.titleTab_3),
+                  Tab(text: Constants.titleTab_4),
                 ]
             )
         ),
@@ -46,6 +48,7 @@ class _ConsoleScreenState extends State<ConsoleScreen> with SingleTickerProvider
           SummaryPage(tabController: tabController),
           ModListPage(tabController: tabController),
           ConsolePage(tabController: tabController),
+          DiagnosticsPage(tabController: tabController),
         ])
     );
   }

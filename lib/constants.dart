@@ -3,6 +3,7 @@ class Constants {
   static const String titleTab_1 = 'Summary';
   static const String titleTab_2 = 'Mod list';
   static const String titleTab_3 = 'Console';
+  static const String titleTab_4 = 'Diagnostics';
   static const String dropText = 'Drop file';
   static const String loadButton = 'Open file';
   static const String parseError = 'Failed to parse file; empty or not a log.';

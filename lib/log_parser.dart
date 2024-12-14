@@ -161,6 +161,8 @@ class Logger
           break;
         }
       }
+
+      Diagnostics.analyse();
       return true;
     }
     on Exception catch (_) {
@@ -202,5 +204,33 @@ class Logger
         // Capturing each keystroke of the search means an invalid regex is possible
       }
     }
+  }
+}
+
+class Diagnostics {
+  static List<Event> missingMemberExceptions = [];
+  static List<Event> mostCommonRecurrentErrors = [];
+
+  static _reset() {
+    missingMemberExceptions.clear();
+    mostCommonRecurrentErrors.clear();
+  }
+
+  static analyse() {
+    _reset();
+    var missingPattern = RegExp('^Missing(Field|Method)Exception');
+    var encounteredExceptions = <String>{};
+    var encounteredCommonErrors = <String>{};
+    for (var e in Logger.events) {
+      if (missingPattern.firstMatch(e.string) != null && !encounteredExceptions.contains(e.fullStringNoPrefix)) {
+        missingMemberExceptions.add(e);
+        encounteredExceptions.add(e.fullStringNoPrefix);
+      }
+      if (e.repeat > 0 && e.severity < 2 && !encounteredCommonErrors.contains(e.fullStringNoPrefix)) {
+        mostCommonRecurrentErrors.add(e);
+        encounteredCommonErrors.add(e.fullStringNoPrefix);
+      }
+    }
+    mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
   }
 }
