@@ -32,6 +32,10 @@ dependencies:
     sdk: flutter
   file_picker: 8.1.4
   super_drag_and_drop: ^0.8.24
+  http: ^1.2.2
+  sqflite: ^2.4.1
+  path: ^1.9.0
+  sqflite_common_ffi: ^2.3.4+4
 
 
 dev_dependencies:

@@ -34,22 +34,14 @@ class _HomePageState extends State<FutureBuilderExample> {
   @override
   void initState() {
     super.initState();
-    getData();
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: getData(),
+        future: Logger.modStatusNetRequest,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Container(
-                color: Colors.black,
-                alignment: Alignment.center,
-                child: const CircularProgressIndicator()
-            );
-          }
-          return Container(
+          var modList = Container(
               color: Colors.black,
               child: ListView.builder(
                 itemCount: Logger.mods.length,
@@ -63,34 +55,11 @@ class _HomePageState extends State<FutureBuilderExample> {
                   );
                 },
               ));
+          if (snapshot.connectionState == ConnectionState.done) {
+            return modList;
+          }
+          return Stack(children: [modList, const Center(child: CircularProgressIndicator())]);
         }
     );
-  }
-
-  Future<void> getData() async {
-    if (Logger.mods.every((m) => m.loaded)) {
-      return;
-    }
-    /*
-    for (var mod in Logger.mods) {
-      print(mod.guid);
-      if (!mod.loaded) {
-        var data = mod.guid.split('-');
-        var response = await http
-            .get(Uri.parse(
-            'https://thunderstore.io/api/experimental/package/${data[0]}/${data[1]}/'));
-        if (response.statusCode == 200) {
-          var modData = jsonDecode(response.body) as Map<String, dynamic>;
-          mod.isDeprecated = modData['is_deprecated'];
-          mod.isLatest = data[2] == modData['latest']['version_number'];
-        }
-        else {
-          print('We got to an issue: (${data[0]}, ${data[1]}) ${response.statusCode}');
-        }
-        mod.loaded = true;
-      }
-    }
-     */
-    setState(() {});
   }
 }

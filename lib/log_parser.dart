@@ -1,32 +1,20 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import 'constants.dart';
+import 'database.dart';
 
 final _regExp = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
 
 class Mod {
   String guid;
-  bool loaded = false;
   bool isDeprecated = false;
   bool isLatest = true;
 
   Mod(this.guid);
-
-  void fetchData() async {
-    /*
-    var data = guid.split('-');
-    var response = await http
-        .get(Uri.parse('https://thunderstore.io/api/experimental/package/${data[0]}/${data[1]}/'));
-    if (response.statusCode == 200) {
-      var modData = jsonDecode(response.body) as Map<String, dynamic>;
-      isDeprecated = modData['is_deprecated'];
-      isLatest = data[2] == modData['latest']['version_number'];
-    }
-    loaded = true;
-     */
-  }
 }
 
 class Event {
@@ -71,6 +59,7 @@ class Logger
   static RegExp _searchPattern = RegExp('', caseSensitive: false);
   static int _repeatThreshold = 0;
   static var filteredEvents = <Event>[];
+  static late Future<List<Null>> modStatusNetRequest;
 
   static void _addEvent(String s) {
     var match = _regExp.firstMatch(s);
@@ -162,6 +151,7 @@ class Logger
         }
       }
 
+      modStatusNetRequest = getAllModsStatus();
       Diagnostics.analyse();
       return true;
     }
@@ -204,6 +194,61 @@ class Logger
         // Capturing each keystroke of the search means an invalid regex is possible
       }
     }
+  }
+
+  static Future<List<Null>> getAllModsStatus() async {
+    await DB.init();
+    var query = await DB.allMods();
+    var toUpdate = List.generate(0, (i) => <String>[]);
+    var now = DateTime.now();
+    var id = query.length;
+    for (var mod in Logger.mods) {
+      var data = mod.guid.split('-');
+      var fullName = '${data[0]}-${data[1]}';
+      var entry = query[fullName];
+      if (entry != null) {
+        if (now.difference(DateTime.parse(entry.dateDb)).inHours < 1) {
+          mod.isLatest = entry.version == data[2];
+          mod.isDeprecated = entry.isDeprecated == 1;
+        }
+        else {
+          toUpdate.add([data[0], data[1], entry.id.toString()]);
+        }
+      }
+      else {
+        toUpdate.add([data[0], data[1], id.toString()]);
+        id++;
+      }
+    }
+
+    // TODO: Ensure network permissions are granted and catch any network errors
+    var client = http.Client();
+    return Future.wait(toUpdate.map((data) =>
+        client.get(
+            Uri.parse('https://thunderstore.io/api/experimental/package/${data[0]}/${data[1]}/'))
+            .then((response) {
+              if (response.statusCode == 200) {
+                var body = jsonDecode(response.body) as Map<String, dynamic>;
+                var fullName = body['full_name'] as String;
+                for (var mod in Logger.mods) {
+                  if (mod.guid.startsWith(fullName)) {
+                    var guid = mod.guid.split('-');
+                    mod.isLatest = body['latest']['version_number'] == guid[2];
+                    mod.isDeprecated = body['is_deprecated'] == 1;
+                    var entry = Entry(
+                      id: int.parse(data[2]),
+                      fullName: fullName,
+                      version: body['latest']['version_number'],
+                      dateTs: body['date_updated'],
+                      dateDb: now.toIso8601String(),
+                      isDeprecated: body['is_deprecated'] ? 1 : 0,
+                    );
+                    DB.insertMod(entry);
+                  }
+                }
+              }
+            })
+    ));
   }
 }
 
