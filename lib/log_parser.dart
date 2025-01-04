@@ -168,6 +168,10 @@ class Logger
     _recalculateFilteredEvents();
   }
 
+  static int getSeverity() {
+    return _severity;
+  }
+
   static void setSearchString(String s) {
     s = s.toLowerCase();
     var repeat = RegExp(r'^repeat:(\d+)\s*').firstMatch(s);
@@ -194,6 +198,10 @@ class Logger
         // Capturing each keystroke of the search means an invalid regex is possible
       }
     }
+  }
+
+  static String getSearchString() {
+    return _searchPattern.pattern;
   }
 
   static Future<List<Null>> getAllModsStatus() async {

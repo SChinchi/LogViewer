@@ -22,10 +22,11 @@ class SliderExample extends StatefulWidget {
 }
 
 class _SliderExampleState extends State<SliderExample> {
-  double _currentSliderValue = Constants.logSeverity.length - 1;
+  double _currentSliderValue = Logger.getSeverity().toDouble();
   var _status = Constants.logSeverity.last;
   var _loggedEvents = Logger.filteredEvents;
-  final ScrollController myScrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _textController = TextEditingController(text: Logger.getSearchString());
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +45,7 @@ class _SliderExampleState extends State<SliderExample> {
                         height: 70,
                         width: 200,
                         child: TextField(
+                          controller: _textController,
                           style: const TextStyle(color: Colors.white, fontSize: 12),
                             decoration: const InputDecoration(
                               labelText: Constants.searchText,
@@ -88,14 +90,14 @@ class _SliderExampleState extends State<SliderExample> {
               )
           ),
           Expanded(child: RawScrollbar(
-            controller: myScrollController,
+            controller: _scrollController,
             thickness: 12,
             thumbColor: Colors.grey,
             thumbVisibility: true,
             radius: const Radius.circular(10),
             child: ListView.builder(
               shrinkWrap: true,
-              controller: myScrollController,
+              controller: _scrollController,
               itemCount: _loggedEvents.length,
               itemBuilder: (context, index) =>
               Stack(
