@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
@@ -95,17 +96,32 @@ class _HomePageState extends State<FutureBuilderExample> {
                   )
               ),
               Expanded(
-                  child: ListView.builder(
-                    itemCount: _mods.length,
-                    itemBuilder: (context, index) {
-                      var mod = _mods[index];
-                      return SelectableText(
-                        mod.guid,
-                        textAlign: TextAlign.left,
-                        style: TextStyle(
-                            color: mod.isDeprecated ? Colors.red : (!mod.isLatest ? Colors.yellow : Colors.white)),
-                      );
-                    },
+                  child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        ListView.builder(
+                          itemCount: _mods.length,
+                          itemBuilder: (context, index) {
+                            var mod = _mods[index];
+                            return SelectableText(
+                              mod.guid,
+                              textAlign: TextAlign.left,
+                              style: TextStyle(
+                                  color: mod.isDeprecated ? Colors.red : (!mod.isLatest ? Colors.yellow : Colors.white)),
+                            );
+                          },
+                        ),
+                        Padding(
+                            padding: const EdgeInsets.all(50),
+                            child: FloatingActionButton(
+                              child: const Icon(Icons.copy),
+                              onPressed: () async {
+                                var text = Logger.modManager.filteredMods.map((m) => m.guid).join('\n');
+                                await Clipboard.setData(ClipboardData(text: text));
+                              },
+                            )
+                        )
+                      ]
                   )
               )
             ]

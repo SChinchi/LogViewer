@@ -5,7 +5,9 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 ## Features
 
 - Drag-n-drop files on the executable for easy loading.
-- Deprecated mods are flagged appropriately by checking their status on Thunderstore.
+- Mod list inspector with search filtering.
+  - Deprecated/old mods are flagged appropriately by checking their status on Thunderstore.
+  - Copy to clipboard.
 - A console UI with search and log level filters.
   - Repeated events are bundled together for compression and to highlight potential error spam.
   - The search supports regex and starting the text with `repeat:N` also filters for events that are repeated at least N times in a row.
@@ -21,11 +23,9 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 - Summary
   - Currently very much WIP. Maybe trim the information shown, maybe combine it with Diagnostics, maybe get rid of it.
 - Mod list
-  - Add search filtering.
   - Flag mods as old (latest update older than a certain date).
   - Flag mods as problematic with a custom list.
   - Add whitelist for functional mods that should not be flagged.
-  - Add floating button to copy to clipboard deprecated/old/etc mods.
 - Console
   - Show additional lines around an event for context?
 - Diagnostics
