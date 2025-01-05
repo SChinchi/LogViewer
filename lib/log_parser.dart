@@ -17,6 +17,74 @@ class Mod {
   Mod(this.guid);
 }
 
+enum ModCategory {
+  All,
+  Deprecated,
+  Old,
+  Problematic,
+}
+
+class ModManager {
+  final mods = <Mod>[];
+  final filteredMods = <Mod>[];
+
+  var _category = ModCategory.All;
+  set category(ModCategory value)
+  {
+    if (_category == value) {
+      return;
+    }
+    _category = value;
+    _recalculateFilteredMods();
+  }
+  ModCategory get category => _category;
+
+  var _searchString = RegExp('', caseSensitive: false);
+  set searchString(String value) {
+    if (value != _searchString.pattern) {
+      try {
+        _searchString = RegExp(value, caseSensitive: false);
+        _recalculateFilteredMods();
+      } on FormatException catch (_) {
+        // Capturing each keystroke of the search means an invalid regex is possible
+      }
+    }
+  }
+  String get searchString => _searchString.pattern;
+
+  bool _passesFilter(Mod mod) {
+    if (_category == ModCategory.All
+        || _category == ModCategory.Deprecated && mod.isDeprecated
+        || _category == ModCategory.Old && !mod.isLatest) {
+      return _searchString.pattern.isEmpty || mod.guid.contains(_searchString);
+    }
+    return false;
+  }
+
+  void _recalculateFilteredMods() {
+    filteredMods.clear();
+    for (var mod in mods) {
+      if (_passesFilter(mod)) {
+        filteredMods.add(mod);
+      }
+    }
+  }
+
+  void reset() {
+    mods.clear();
+    filteredMods.clear();
+    _category = ModCategory.All;
+    _searchString = RegExp('', caseSensitive: false);
+  }
+
+  void add(Mod mod) {
+    mods.add(mod);
+    if (_passesFilter(mod)) {
+      filteredMods.add(mod);
+    }
+  }
+}
+
 class Event {
   late int severity;
   late String source;
@@ -52,7 +120,7 @@ class Event {
 class Logger
 {
   static final events = <Event>[];
-  static final mods = <Mod>[];
+  static final modManager = ModManager();
   static final summary = <String>[];
 
   static var _severity = Constants.logSeverity.length - 1;
@@ -78,7 +146,7 @@ class Logger
       filteredEvents.add(event);
     }
     if (event.modName != null) {
-      mods.add(Mod(event.modName!));
+      modManager.add(Mod(event.modName!));
     }
   }
 
@@ -101,7 +169,7 @@ class Logger
   static void _reset() {
     events.clear();
     filteredEvents.clear();
-    mods.clear();
+    modManager.reset();
     summary.clear();
 
     _severity = Constants.logSeverity.length - 1;
@@ -210,7 +278,7 @@ class Logger
     var toUpdate = List.generate(0, (i) => <String>[]);
     var now = DateTime.now();
     var id = query.length;
-    for (var mod in Logger.mods) {
+    for (var mod in Logger.modManager.mods) {
       var data = mod.guid.split('-');
       var fullName = '${data[0]}-${data[1]}';
       var entry = query[fullName];
@@ -238,7 +306,7 @@ class Logger
               if (response.statusCode == 200) {
                 var body = jsonDecode(response.body) as Map<String, dynamic>;
                 var fullName = body['full_name'] as String;
-                for (var mod in Logger.mods) {
+                for (var mod in Logger.modManager.mods) {
                   if (mod.guid.startsWith(fullName)) {
                     var guid = mod.guid.split('-');
                     mod.isLatest = body['latest']['version_number'] == guid[2];
