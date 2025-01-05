@@ -12,6 +12,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
   - Repeated events are bundled together for compression and to highlight potential error spam.
   - The search supports regex and starting the text with `repeat:N` also filters for events that are repeated at least N times in a row.
 - A diagnostics tab that collects various issues that may highlight why a profile leads to errors.
+  - Mods Crashing On Awake: errors with `BepInEx.Bootstrap.Chainloader:Start()`. Incomplete mod loading may lead to issues for other mods. 
   - Missing Member Exception: for outdated mods that attempt to call missing code.
   - Most Repeated Errors: events logged multiple times consecutively (most likely errors) sorted in descending order.
 
@@ -31,7 +32,6 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 - Diagnostics
   - List any mods not loading due to missing dependencies.
   - Capture mods that corrupt code with bad IL.
-  - List any mods that crash on their Awake (includes `BepInEx.Bootstrap.Chainloader:Start()` in the stack trace).
 
 ## How to build
 

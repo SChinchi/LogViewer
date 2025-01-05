@@ -17,6 +17,9 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     var data = <ExpandableList>[];
+    if (Diagnostics.modsCrashingOnAwake.isNotEmpty) {
+      data.add(ExpandableList(heading: 'Mods Crashing On Awake', items: Diagnostics.modsCrashingOnAwake));
+    }
     if (Diagnostics.missingMemberExceptions.isNotEmpty) {
       data.add(ExpandableList(heading: 'Missing Member Exception', items: Diagnostics.missingMemberExceptions));
     }
@@ -31,9 +34,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> with SingleTickerProv
             backgroundColor: Colors.white10,
             title: Text(data[index].heading, style: const TextStyle(color: Colors.white)),
             children: data[index].items.map((item) => ListTile(
-                title: SelectableText(item.fullString,
-                    style: TextStyle(color: item.color)
-                )
+                title: SelectableText(item.text, style: TextStyle(color: item.color))
             )).toList()
           );
         },
@@ -45,7 +46,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> with SingleTickerProv
 
 class ExpandableList {
   String heading;
-  List<Event> items;
+  List<ListItem> items;
 
   ExpandableList({required this.heading, required this.items});
 }

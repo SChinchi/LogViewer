@@ -328,30 +328,48 @@ class Logger
   }
 }
 
+class ListItem {
+  String text;
+  Color color;
+  int? repeat;
+
+  ListItem({required this.text, required this.color, this.repeat});
+}
+
 class Diagnostics {
-  static List<Event> missingMemberExceptions = [];
-  static List<Event> mostCommonRecurrentErrors = [];
+  static List<ListItem> modsCrashingOnAwake = [];
+  static List<ListItem> missingMemberExceptions = [];
+  static List<ListItem> mostCommonRecurrentErrors = [];
 
   static _reset() {
+    modsCrashingOnAwake.clear();
     missingMemberExceptions.clear();
     mostCommonRecurrentErrors.clear();
   }
 
   static analyse() {
     _reset();
+    var chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start()');
     var missingPattern = RegExp('^Missing(Field|Method)Exception');
     var encounteredExceptions = <String>{};
     var encounteredCommonErrors = <String>{};
+    var currentMod = '';
     for (var e in Logger.events) {
+      if (e.modName != null) {
+        currentMod = e.modName!;
+      }
       if (missingPattern.firstMatch(e.string) != null && !encounteredExceptions.contains(e.fullStringNoPrefix)) {
-        missingMemberExceptions.add(e);
+        missingMemberExceptions.add(ListItem(text: e.fullString, color: e.color));
         encounteredExceptions.add(e.fullStringNoPrefix);
       }
       if (e.repeat > 0 && e.severity < 2 && !encounteredCommonErrors.contains(e.fullStringNoPrefix)) {
-        mostCommonRecurrentErrors.add(e);
+        mostCommonRecurrentErrors.add(ListItem(text: e.fullString, color: e.color, repeat: e.repeat));
         encounteredCommonErrors.add(e.fullStringNoPrefix);
       }
+      if (chainLoaderPattern.firstMatch(e.fullString) != null) {
+        modsCrashingOnAwake.add(ListItem(text: '$currentMod\n${e.fullString}', color: e.color));
+      }
     }
-    mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
+    mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat!.compareTo(event1.repeat!));
   }
 }
