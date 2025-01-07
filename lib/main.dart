@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:log_viewer/settings.dart';
 
 import 'screens/home_screen.dart';
 
 void main(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
+  Settings.init();
   runApp(MyApp(args: args));
 }
 

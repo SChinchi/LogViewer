@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:log_viewer/settings.dart';
 
 import 'constants.dart';
 import 'database.dart';
@@ -12,7 +13,7 @@ final _regExp = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?
 class Mod {
   String guid;
   bool isDeprecated = false;
-  bool isLatest = true;
+  bool isOld = false;
 
   Mod(this.guid);
 }
@@ -54,8 +55,8 @@ class ModManager {
 
   bool _passesFilter(Mod mod) {
     if (_category == ModCategory.All
-        || _category == ModCategory.Deprecated && mod.isDeprecated
-        || _category == ModCategory.Old && !mod.isLatest) {
+        || (_category == ModCategory.Deprecated && mod.isDeprecated)
+        || (_category == ModCategory.Old && mod.isOld && !mod.isDeprecated)) {
       return _searchString.pattern.isEmpty || mod.guid.contains(_searchString);
     }
     return false;
@@ -277,17 +278,18 @@ class Logger
     var query = await DB.allMods();
     var toUpdate = List.generate(0, (i) => <String>[]);
     var now = DateTime.now();
+    var cutOffDate = Settings.getCutOffDate();
     var id = query.length;
     for (var mod in Logger.modManager.mods) {
       var data = mod.guid.split('-');
       var fullName = '${data[0]}-${data[1]}';
       var entry = query[fullName];
       if (entry != null) {
-        if (now.difference(DateTime.parse(entry.dateDb)).inHours < 1) {
-          mod.isLatest = entry.version == data[2];
-          mod.isDeprecated = entry.isDeprecated == 1;
-        }
-        else {
+        mod.isDeprecated = entry.isDeprecated == 1;
+        mod.isOld = cutOffDate != null
+            && DateTime.parse(entry.dateTs).difference(cutOffDate).isNegative
+            && !mod.isDeprecated;
+        if (now.difference(DateTime.parse(entry.dateDb)).inHours > 1) {
           toUpdate.add([data[0], data[1], entry.id.toString()]);
         }
       }
@@ -308,9 +310,10 @@ class Logger
                 var fullName = body['full_name'] as String;
                 for (var mod in Logger.modManager.mods) {
                   if (mod.guid.startsWith(fullName)) {
-                    var guid = mod.guid.split('-');
-                    mod.isLatest = body['latest']['version_number'] == guid[2];
                     mod.isDeprecated = body['is_deprecated'] == 1;
+                    mod.isOld = cutOffDate != null
+                        && DateTime.parse(body['date_updated']).difference(cutOffDate).isNegative
+                        && !mod.isDeprecated;
                     var entry = Entry(
                       id: int.parse(data[2]),
                       fullName: fullName,
@@ -322,6 +325,18 @@ class Logger
                     DB.insertMod(entry);
                   }
                 }
+              }
+              else {
+                var defaultDate = DateTime(0, 0, 0).toIso8601String();
+                var entry = Entry(
+                  id: int.parse(data[2]),
+                  fullName: '${data[0]}-${data[1]}',
+                  version: '0.0.0',
+                  dateTs: defaultDate,
+                  dateDb: defaultDate,
+                  isDeprecated: 0,
+                );
+                DB.insertMod(entry);
               }
             })
     ));

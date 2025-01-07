@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants.dart';
+import '../settings_screen.dart';
 import 'tabs/summary_tab.dart';
 import 'tabs/modlist_tab.dart';
 import 'tabs/console_tab.dart';
@@ -32,6 +33,18 @@ class _ConsoleScreenState extends State<ConsoleScreen> with SingleTickerProvider
             toolbarHeight: 30,
             backgroundColor: Colors.black,
             iconTheme: const IconThemeData(color: Colors.white),
+            actions: [
+              PopupMenuButton<String>(
+                onSelected: ((value) => {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()))
+                }),
+                itemBuilder: (BuildContext context) {
+                  return Constants.menuOptions.map((String choice) {
+                    return PopupMenuItem<String>(value: choice, child: Text(choice));
+                  }).toList();
+                },
+              )
+            ],
             bottom: TabBar(
                 controller: tabController,
                 labelColor: Colors.white,
