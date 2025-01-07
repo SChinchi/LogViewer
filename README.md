@@ -20,11 +20,9 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 
 - Main screen
   - Add loading progress bar for big files. Optimisation might also be possible when parsing the log.
-  - Properly show an error message when an invalid file is selected.
 - Summary
   - Currently very much WIP. Maybe trim the information shown, maybe combine it with Diagnostics, maybe get rid of it.
 - Mod list
-  - Flag mods as old (latest update older than a certain date).
   - Flag mods as problematic with a custom list.
   - Add whitelist for functional mods that should not be flagged.
 - Console
