@@ -355,11 +355,13 @@ class ListItem {
 
 class Diagnostics {
   static List<ListItem> modsCrashingOnAwake = [];
+  static List<ListItem> stuckLoading = [];
   static List<ListItem> missingMemberExceptions = [];
   static List<ListItem> mostCommonRecurrentErrors = [];
 
   static _reset() {
     modsCrashingOnAwake.clear();
+    stuckLoading.clear();
     missingMemberExceptions.clear();
     mostCommonRecurrentErrors.clear();
   }
@@ -368,6 +370,7 @@ class Diagnostics {
     _reset();
     var chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start()');
     var missingPattern = RegExp('^Missing(Field|Method)Exception');
+    var stuckLoadingPattern = RegExp(r'RoR2\.RoR2Application\+<LoadGameContent>d__\d+\.MoveNext \(\)');
     var encounteredExceptions = <String>{};
     var encounteredCommonErrors = <String>{};
     var currentMod = '';
@@ -385,6 +388,9 @@ class Diagnostics {
       }
       if (chainLoaderPattern.firstMatch(e.fullString) != null) {
         modsCrashingOnAwake.add(ListItem(text: '$currentMod\n${e.fullString}', color: e.color));
+      }
+      if (stuckLoadingPattern.firstMatch(e.fullString) != null) {
+        stuckLoading.add(ListItem(text: e.fullString, color: e.color));
       }
     }
     mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat!.compareTo(event1.repeat!));
