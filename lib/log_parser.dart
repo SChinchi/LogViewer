@@ -289,10 +289,9 @@ class Logger
   static Future getAllModsStatus() async {
     await DB.init();
     var query = await DB.allMods();
-    var toUpdate = <String, int>{};
+    var toUpdate = <String>{};
     var now = DateTime.now();
     var cutOffDate = Settings.getCutOffDate();
-    var id = query.length;
     for (var mod in Logger.modManager.mods) {
       var entry = query[mod.fullName];
       if (entry != null) {
@@ -301,16 +300,11 @@ class Logger
             && DateTime.parse(entry.dateTs).difference(cutOffDate).isNegative
             && !mod.isDeprecated;
         if (now.difference(DateTime.parse(entry.dateDb)).inHours > 1) {
-          if (!toUpdate.containsKey(mod.fullName)) {
-            toUpdate[mod.fullName] = entry.id;
-          }
+          toUpdate.add(mod.fullName);
         }
       }
       else {
-        if (!toUpdate.containsKey(mod.fullName)) {
-          toUpdate[mod.fullName] = id;
-          id++;
-        }
+        toUpdate.add(mod.fullName);
       }
     }
 
@@ -321,7 +315,7 @@ class Logger
           var body = jsonDecode(response.body) as List;
           for (var tsMod in body) {
             var fullName = tsMod['full_name'];
-            if (toUpdate.containsKey(fullName)) {
+            if (toUpdate.contains(fullName)) {
               var mod = Logger.modManager.getMod(fullName);
               if (mod != null) {
                 mod.isDeprecated = tsMod['is_deprecated'] == 1;
@@ -332,9 +326,7 @@ class Logger
                         .isNegative
                     && !mod.isDeprecated;
                 var entry = Entry(
-                  id: toUpdate[fullName]!,
                   fullName: fullName,
-                  version: '',
                   dateTs: tsMod['date_updated'],
                   dateDb: now.toIso8601String(),
                   isDeprecated: tsMod['is_deprecated'] ? 1 : 0,

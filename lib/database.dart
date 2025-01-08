@@ -21,7 +21,7 @@ class DB {
       join(await getDatabasesPath(), 'mods.db'),
       onCreate: (db, version) {
         return db.execute(
-          'CREATE TABLE mods(id INTEGER PRIMARY KEY, full_name TEXT, version TEXT, date_ts TEXT, date_db TEXT, deprecated INTEGER)',
+          'CREATE TABLE mods(full_name TEXT PRIMARY KEY, date_ts TEXT, date_db TEXT, deprecated INTEGER)',
         );
       },
       version: 1,
@@ -43,8 +43,8 @@ class DB {
     await db.update(
       'mods',
       mod.serialise(),
-      where: 'id = ?',
-      whereArgs: [mod.id],
+      where: 'full_name = ?',
+      whereArgs: [mod.fullName],
     );
   }
 
@@ -55,9 +55,7 @@ class DB {
     for (var kvp in entries) {
       var fullName = kvp['full_name'] as String;
       result[fullName] = Entry(
-          id: kvp['id'] as int,
           fullName: fullName,
-          version: kvp['version'] as String,
           dateTs: kvp['date_ts'] as String,
           dateDb: kvp['date_db'] as String,
           isDeprecated: kvp['deprecated'] as int,
@@ -68,17 +66,13 @@ class DB {
 }
 
 class Entry {
-  final int id;
   final String fullName;
-  final String version;
   final String dateTs;
   final String dateDb;
   final int isDeprecated;
 
   Entry({
-    required this.id,
     required this.fullName,
-    required this.version,
     required this.dateTs,
     required this.dateDb,
     required this.isDeprecated,
@@ -86,9 +80,7 @@ class Entry {
 
   Map<String, Object?> serialise() {
     return {
-      'id': id,
       'full_name': fullName,
-      'version': version,
       'date_ts': dateTs,
       'date_db': dateDb,
       'deprecated': isDeprecated,
