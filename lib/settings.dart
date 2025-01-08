@@ -1,3 +1,4 @@
+import 'package:log_viewer/log_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Settings {
@@ -10,16 +11,14 @@ class Settings {
 
   static init() async {
     _prefs = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
-
     _useCutOffDate = _prefs.getBool(KEY_USE_CUT_OFF_DATE) ?? false;
-    if (_useCutOffDate) {
-      _cutOffDate = DateTime.tryParse(_prefs.getString(KEY_CUT_OFF_DATE) ?? '');
-    }
+    _cutOffDate = DateTime.tryParse(_prefs.getString(KEY_CUT_OFF_DATE) ?? '');
   }
 
   static setUseCutOffDate(bool value) async {
     _useCutOffDate = value;
-    _prefs.setBool(KEY_USE_CUT_OFF_DATE, value);
+    await _prefs.setBool(KEY_USE_CUT_OFF_DATE, value);
+    await Logger.getAllModsStatus();
   }
 
   static bool getUseCutOffDate() => _useCutOffDate;
@@ -28,6 +27,7 @@ class Settings {
     if (date != null) {
       _cutOffDate = date;
       await _prefs.setString(KEY_CUT_OFF_DATE, date.toIso8601String());
+      await Logger.getAllModsStatus();
     }
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -12,10 +13,15 @@ final _regExp = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?
 
 class Mod {
   String guid;
+  late String fullName;
   bool isDeprecated = false;
   bool isOld = false;
 
-  Mod(this.guid);
+  Mod(this.guid) {
+    var pattern = RegExp(r'^(.*)-\d+.\d+.\d+');
+    var name = pattern.firstMatch(guid);
+    fullName = name != null ? name.group(1)! : guid;
+  }
 }
 
 enum ModCategory {
@@ -28,6 +34,7 @@ enum ModCategory {
 class ModManager {
   final mods = <Mod>[];
   final filteredMods = <Mod>[];
+  final _nameToMod = <String, Mod>{};
 
   var _category = ModCategory.All;
   set category(ModCategory value)
@@ -74,6 +81,7 @@ class ModManager {
   void reset() {
     mods.clear();
     filteredMods.clear();
+    _nameToMod.clear();
     _category = ModCategory.All;
     _searchString = RegExp('', caseSensitive: false);
   }
@@ -83,6 +91,11 @@ class ModManager {
     if (_passesFilter(mod)) {
       filteredMods.add(mod);
     }
+    _nameToMod[mod.fullName] = mod;
+  }
+
+  Mod? getMod(String name) {
+    return _nameToMod[name];
   }
 }
 
@@ -128,7 +141,7 @@ class Logger
   static RegExp _searchPattern = RegExp('', caseSensitive: false);
   static int _repeatThreshold = 0;
   static var filteredEvents = <Event>[];
-  static late Future<List<Null>> modStatusNetRequest;
+  static late Future modStatusNetRequest;
 
   static void _addEvent(String s) {
     var match = _regExp.firstMatch(s);
@@ -273,73 +286,70 @@ class Logger
     return _searchPattern.pattern;
   }
 
-  static Future<List<Null>> getAllModsStatus() async {
+  static Future getAllModsStatus() async {
     await DB.init();
     var query = await DB.allMods();
-    var toUpdate = List.generate(0, (i) => <String>[]);
+    var toUpdate = <String, int>{};
     var now = DateTime.now();
     var cutOffDate = Settings.getCutOffDate();
     var id = query.length;
     for (var mod in Logger.modManager.mods) {
-      var data = mod.guid.split('-');
-      var fullName = '${data[0]}-${data[1]}';
-      var entry = query[fullName];
+      var entry = query[mod.fullName];
       if (entry != null) {
         mod.isDeprecated = entry.isDeprecated == 1;
         mod.isOld = cutOffDate != null
             && DateTime.parse(entry.dateTs).difference(cutOffDate).isNegative
             && !mod.isDeprecated;
         if (now.difference(DateTime.parse(entry.dateDb)).inHours > 1) {
-          toUpdate.add([data[0], data[1], entry.id.toString()]);
+          if (!toUpdate.containsKey(mod.fullName)) {
+            toUpdate[mod.fullName] = entry.id;
+          }
         }
       }
       else {
-        toUpdate.add([data[0], data[1], id.toString()]);
-        id++;
+        if (!toUpdate.containsKey(mod.fullName)) {
+          toUpdate[mod.fullName] = id;
+          id++;
+        }
       }
     }
 
     // TODO: Ensure network permissions are granted and catch any network errors
-    var client = http.Client();
-    return Future.wait(toUpdate.map((data) =>
-        client.get(
-            Uri.parse('https://thunderstore.io/api/experimental/package/${data[0]}/${data[1]}/'))
-            .then((response) {
-              if (response.statusCode == 200) {
-                var body = jsonDecode(response.body) as Map<String, dynamic>;
-                var fullName = body['full_name'] as String;
-                for (var mod in Logger.modManager.mods) {
-                  if (mod.guid.startsWith(fullName)) {
-                    mod.isDeprecated = body['is_deprecated'] == 1;
-                    mod.isOld = cutOffDate != null
-                        && DateTime.parse(body['date_updated']).difference(cutOffDate).isNegative
-                        && !mod.isDeprecated;
-                    var entry = Entry(
-                      id: int.parse(data[2]),
-                      fullName: fullName,
-                      version: body['latest']['version_number'],
-                      dateTs: body['date_updated'],
-                      dateDb: now.toIso8601String(),
-                      isDeprecated: body['is_deprecated'] ? 1 : 0,
-                    );
-                    DB.insertMod(entry);
-                  }
-                }
-              }
-              else {
-                var defaultDate = DateTime(0, 0, 0).toIso8601String();
+    return Future(() => {
+      http.get(Uri.parse('https://thunderstore.io/api/v1/package/')).then((response) {
+        if (response.statusCode == 200) {
+          var body = jsonDecode(response.body) as List;
+          for (var tsMod in body) {
+            var fullName = tsMod['full_name'];
+            if (toUpdate.containsKey(fullName)) {
+              var mod = Logger.modManager.getMod(fullName);
+              if (mod != null) {
+                mod.isDeprecated = tsMod['is_deprecated'] == 1;
+                mod.isOld = cutOffDate != null
+                    && DateTime
+                        .parse(tsMod['date_updated'])
+                        .difference(cutOffDate)
+                        .isNegative
+                    && !mod.isDeprecated;
                 var entry = Entry(
-                  id: int.parse(data[2]),
-                  fullName: '${data[0]}-${data[1]}',
-                  version: '0.0.0',
-                  dateTs: defaultDate,
-                  dateDb: defaultDate,
-                  isDeprecated: 0,
+                  id: toUpdate[fullName]!,
+                  fullName: fullName,
+                  version: '',
+                  dateTs: tsMod['date_updated'],
+                  dateDb: now.toIso8601String(),
+                  isDeprecated: tsMod['is_deprecated'] ? 1 : 0,
                 );
                 DB.insertMod(entry);
+                toUpdate.remove(fullName);
+                if (toUpdate.isEmpty) {
+                  break;
+                }
               }
-            })
-    ));
+            }
+          }
+        }
+      })
+    });
   }
 }
 
