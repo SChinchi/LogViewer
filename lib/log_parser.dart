@@ -16,6 +16,7 @@ class Mod {
   late String fullName;
   bool isDeprecated = false;
   bool isOld = false;
+  bool isProblematic = false;
 
   Mod(this.guid) {
     var pattern = RegExp(r'^(.*)-\d+.\d+.\d+');
@@ -63,7 +64,8 @@ class ModManager {
   bool _passesFilter(Mod mod) {
     if (_category == ModCategory.All
         || (_category == ModCategory.Deprecated && mod.isDeprecated)
-        || (_category == ModCategory.Old && mod.isOld && !mod.isDeprecated)) {
+        || (_category == ModCategory.Old && mod.isOld && !mod.isDeprecated)
+        || (_category == ModCategory.Problematic && mod.isProblematic)) {
       return _searchString.pattern.isEmpty || mod.guid.contains(_searchString);
     }
     return false;
@@ -292,16 +294,21 @@ class Logger
     var toUpdate = <String>{};
     var now = DateTime.now();
     var cutOffDate = Settings.getCutOffDate();
+    var deprecatedAndOldWhitelist = Settings.getDeprecatedAndOldWhitelist();
+    var problematicModlist = Settings.getProblematicModlist();
     for (var mod in Logger.modManager.mods) {
       var entry = query[mod.fullName];
       if (entry != null) {
-        mod.isDeprecated = entry.isDeprecated == 1;
-        mod.isOld = cutOffDate != null
+        var whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+        mod.isDeprecated = !whitelisted && entry.isDeprecated == 1;
+        mod.isOld = !whitelisted
+            && cutOffDate != null
             && DateTime.parse(entry.dateTs).difference(cutOffDate).isNegative
             && !mod.isDeprecated;
         if (now.difference(DateTime.parse(entry.dateDb)).inHours > 1) {
           toUpdate.add(mod.fullName);
         }
+        mod.isProblematic = problematicModlist.contains(mod.fullName);
       }
       else {
         toUpdate.add(mod.fullName);
@@ -318,13 +325,16 @@ class Logger
             if (toUpdate.contains(fullName)) {
               var mod = Logger.modManager.getMod(fullName);
               if (mod != null) {
-                mod.isDeprecated = tsMod['is_deprecated'] == 1;
-                mod.isOld = cutOffDate != null
+                var whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+                mod.isDeprecated = !whitelisted && tsMod['is_deprecated'] == 1;
+                mod.isOld = !whitelisted
+                    && cutOffDate != null
                     && DateTime
                         .parse(tsMod['date_updated'])
                         .difference(cutOffDate)
                         .isNegative
                     && !mod.isDeprecated;
+                mod.isProblematic = problematicModlist.contains(fullName);
                 var entry = Entry(
                   fullName: fullName,
                   dateTs: tsMod['date_updated'],

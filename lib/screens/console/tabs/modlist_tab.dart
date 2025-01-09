@@ -107,7 +107,11 @@ class _HomePageState extends State<FutureBuilderExample> {
                               mod.guid,
                               textAlign: TextAlign.left,
                               style: TextStyle(
-                                color: mod.isDeprecated ? Colors.red : (mod.isOld ? Colors.grey : Colors.white)),
+                                color: mod.isDeprecated ? Colors.red
+                                    : mod.isOld ? Colors.grey
+                                    : mod.isProblematic ? Colors.yellow
+                                    : Colors.white
+                              ),
                             );
                           },
                         ),

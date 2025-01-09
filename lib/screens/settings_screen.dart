@@ -13,6 +13,25 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   var _cutOffDateEnabled = Settings.getUseCutOffDate();
+  final _whitelistTextController = TextEditingController();
+  final _problematicTextController = TextEditingController();
+  late String _whitelistOldText;
+  late String _whitelistSubtitle;
+  late String _problematicSubtitle;
+  late String _problematicOldText;
+
+  @override
+  void initState() {
+    var whitelist = Settings.getDeprecatedAndOldWhitelist();
+    _whitelistOldText = whitelist.join('\n');
+    _whitelistTextController.text = _whitelistOldText;
+    _whitelistSubtitle = _countItems(whitelist);
+    var problematic = Settings.getProblematicModlist();
+    _problematicOldText = problematic.join('\n');
+    _problematicTextController.text = _problematicOldText;
+    _problematicSubtitle = _countItems(problematic);
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,11 +95,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Logger.modStatusNetRequest = Logger.getAllModsStatus();
                 });
               }
-            )
+            ),
+            ListTile(
+                title: const Text('Edit Deprecated/Old Mod Whitelist'),
+                subtitle: Text(_whitelistSubtitle),
+                onTap: () {
+                  _whitelistOldText = _whitelistTextController.text;
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return MultilineTextDialog(
+                          title: 'Deprecated/Old Mod Whitelist',
+                          textController: _whitelistTextController,
+                          onTapCancel: () {
+                            _whitelistTextController.text = _whitelistOldText;
+                            Navigator.of(context).pop();
+                          },
+                          onTapOK: () {
+                            setState(() {
+                              var modlist = _convertToInvariantList(_whitelistTextController.text);
+                              _whitelistTextController.text = modlist.join('\n');
+                              _whitelistSubtitle = _countItems(modlist);
+                              Settings.setDeprecatedAndOldWhitelist(modlist);
+                            });
+                            Navigator.of(context).pop();
+                          }
+                      );
+                    },
+                  );
+                }
+            ),
+            ListTile(
+                title: const Text('Edit Problematic Mod list'),
+                subtitle: Text(_problematicSubtitle),
+                onTap: () {
+                  _problematicOldText = _problematicTextController.text;
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return MultilineTextDialog(
+                          title: 'Problematic Mod List',
+                          textController: _problematicTextController,
+                          onTapCancel: () {
+                            _problematicTextController.text = _problematicOldText;
+                            Navigator.of(context).pop();
+                          },
+                          onTapOK: () {
+                            setState(() {
+                              var modlist = _convertToInvariantList(_problematicTextController.text);
+                              _problematicTextController.text = modlist.join('\n');
+                              _problematicSubtitle = _countItems(modlist);
+                              Settings.setProblematicModlist(modlist);
+                            });
+                            Navigator.of(context).pop();
+                          }
+                      );
+                    },
+                  );
+                }
+            ),
           ])
         ))
       )
     );
+  }
+
+  static List<String> _convertToInvariantList(String text) {
+    var lines = text.replaceAll(' ', '').split('\n').toSet();
+    lines.remove('');
+    var items = lines.toList();
+    items.sort();
+    return items;
+  }
+
+  static String _countItems(List<String> items) {
+    if (items.isEmpty) {
+      return 'Empty';
+    }
+    if (items.length == 1) {
+      return '1 mod';
+    }
+    return '${items.length} mods';
   }
 }
 
@@ -124,6 +219,45 @@ class SettingsSection extends StatelessWidget {
         ),
         Container(child: tileList)
       ]
+    );
+  }
+}
+
+class MultilineTextDialog extends StatelessWidget {
+  final String title;
+  final TextEditingController textController;
+  final VoidCallback onTapCancel;
+  final VoidCallback onTapOK;
+
+  const MultilineTextDialog({
+    required this.title,
+    required this.textController,
+    required this.onTapCancel,
+    required this.onTapOK,
+    super.key
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(title),
+      content: TextField(
+        controller: textController,
+        maxLines: null,
+        expands: true,
+        keyboardType: TextInputType.multiline,
+        autofocus: true,
+      ),
+      actions: [
+        TextButton(
+          onPressed: onTapCancel,
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: onTapOK,
+          child: const Text('OK'),
+        ),
+      ],
     );
   }
 }
