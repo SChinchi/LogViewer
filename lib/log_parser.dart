@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -108,6 +109,7 @@ class Event {
   late String fullString;
   late String fullStringNoPrefix;
   late Color color;
+  late int index;
   int repeat = 0;
   String? modName;
 
@@ -135,12 +137,18 @@ class Event {
 
 class Logger
 {
+  static const intMin = ~(-1 >>> 1);
+  static const startIndex = 0;
+  static const endIndex = 0;
+
   static final events = <Event>[];
   static final modManager = ModManager();
   static final summary = <String>[];
 
   static var _severity = Constants.logSeverity.length - 1;
   static RegExp _searchPattern = RegExp('', caseSensitive: false);
+  static int _eventStart = startIndex;
+  static int _eventEnd = endIndex;
   static int _repeatThreshold = 0;
   static var filteredEvents = <Event>[];
   static late Future modStatusNetRequest;
@@ -157,6 +165,7 @@ class Logger
       return;
     }
     var event = Event(s, match);
+    event.index = events.length;
     events.add(event);
     if (_passesFilter(event)) {
       filteredEvents.add(event);
@@ -175,7 +184,9 @@ class Logger
 
   static void _recalculateFilteredEvents() {
     filteredEvents.clear();
-    for (var e in events) {
+    var start = _eventStart;
+    var end = max(_eventStart, events.length+_eventEnd);
+    for (var e in events.sublist(start, end)) {
       if (_passesFilter(e)) {
         filteredEvents.add(e);
       }
@@ -190,6 +201,8 @@ class Logger
 
     _severity = Constants.logSeverity.length - 1;
     _searchPattern = RegExp('', caseSensitive: false);
+    _eventStart = startIndex;
+    _eventEnd = endIndex;
     _repeatThreshold = 0;
   }
 
@@ -226,6 +239,12 @@ class Logger
       if (sb.isNotEmpty) {
         _addEvent(sb.toString().trimRight());
       }
+      // Prefix each message with its index; useful for range searching
+      var total = events.length;
+      var length = total.toString().length;
+      for (var event in events) {
+        event.fullString = '${event.index.toString().padLeft(length, '0')} ${event.fullString}';
+      }
 
       var lastSummaryLine = RegExp(r'^\d+ plugins to load$');
       for (var event in events) {
@@ -258,23 +277,36 @@ class Logger
 
   static void setSearchString(String s) {
     s = s.toLowerCase();
-    var repeat = RegExp(r'^repeat:(\d+)\s*').firstMatch(s);
+    var eventRange = RegExp(r'\s*range:(-?\d+)?\.\.(-?\d+)?\s*').firstMatch(s);
+    var hasRangeChanged = false;
+    if (eventRange != null) {
+      var start = eventRange.group(1) != null ? int.tryParse(eventRange.group(1)!) ?? startIndex : startIndex;
+      start = start >= 0 ? min(start, events.length) : max(startIndex, events.length+start);
+      var end = eventRange.group(2) != null ? int.tryParse(eventRange.group(2)!) ?? intMin : intMin;
+      end = end > 0 ? max(end-events.length, -events.length) : end == intMin ? startIndex : max(-events.length, end);
+      hasRangeChanged = start != _eventStart || end != _eventEnd;
+      _eventStart = start;
+      _eventEnd = end;
+      s = s.replaceFirst(eventRange.group(0)!, '');
+    }
+    else {
+      hasRangeChanged = _eventStart != startIndex || _eventEnd != endIndex;
+      _eventStart = startIndex;
+      _eventEnd = endIndex;
+    }
+    var repeat = RegExp(r'\s*repeat:(\d+)\s*').firstMatch(s);
     var hasThresholdChanged = false;
     if (repeat != null) {
       var value = int.parse(repeat.group(1)!);
-      if (value != _repeatThreshold) {
-        hasThresholdChanged = true;
-      }
+      hasThresholdChanged = value != _repeatThreshold;
       _repeatThreshold = value;
-      s = s.substring(repeat.group(0)!.length);
+      s = s.replaceFirst(repeat.group(0)!, '');
     }
     else {
-      if (_repeatThreshold != 0) {
-        hasThresholdChanged = true;
-      }
+      hasThresholdChanged = _repeatThreshold != 0;
       _repeatThreshold = 0;
     }
-    if (s != _searchPattern.pattern || hasThresholdChanged) {
+    if (s != _searchPattern.pattern || hasRangeChanged || hasThresholdChanged) {
       try {
         _searchPattern = RegExp(s, caseSensitive: false);
         _recalculateFilteredEvents();
@@ -378,7 +410,7 @@ class Diagnostics {
 
   static analyse() {
     _reset();
-    var chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start()');
+    var chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start\(\)');
     var missingPattern = RegExp('^Missing(Field|Method)Exception');
     var stuckLoadingPattern = RegExp(r'RoR2\.RoR2Application\+<LoadGameContent>d__\d+\.MoveNext \(\)');
     var encounteredExceptions = <String>{};

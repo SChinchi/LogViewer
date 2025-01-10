@@ -11,8 +11,10 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
   - Custom list for generally problematic mods.
   - Copy to clipboard.
 - A console UI with search and log level filters.
-  - Repeated events are bundled together for compression and to highlight potential error spam.
-  - The search supports regex and starting the text with `repeat:N` also filters for events that are repeated at least N times in a row.
+  - Repeated events are bundled together for compression and to highlight potential error spam. Indicated with an orange number at the bottom right.
+  - The search supports regex. The following flags can further limit a search:
+    - `repeat:N` filters for events that are repeated at least N times in a row.
+    - `range:start..end` filters for event indices. If either value is omitted, a default is used. Negative numbers count from the end of the list, e.g., `range:-5..` is the last 5 events.
 - A diagnostics tab that collects various issues that may highlight why a profile leads to errors.
   - Mods Crashing On Awake: errors with `BepInEx.Bootstrap.Chainloader:Start()`. Incomplete mod loading may lead to issues for other mods.
   - Stuck Loading x%: for errors that cause the game to hang on the loading screen. 
@@ -25,8 +27,6 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
   - Add loading progress bar for big files. Optimisation might also be possible when parsing the log.
 - Summary
   - Currently very much WIP. Maybe trim the information shown, maybe combine it with Diagnostics, maybe get rid of it.
-- Console
-  - Show additional lines around an event for context?
 - Diagnostics
   - List any mods not loading due to missing dependencies.
   - Capture mods that corrupt code with bad IL.
