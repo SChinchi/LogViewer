@@ -103,6 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _whitelistOldText = _whitelistTextController.text;
                   showDialog(
                     context: context,
+                    barrierDismissible: false,
                     builder: (BuildContext context) {
                       return MultilineTextDialog(
                           title: 'Deprecated/Old Mod Whitelist',
@@ -132,6 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _problematicOldText = _problematicTextController.text;
                   showDialog(
                     context: context,
+                    barrierDismissible: false,
                     builder: (BuildContext context) {
                       return MultilineTextDialog(
                           title: 'Problematic Mod List',
@@ -240,13 +242,15 @@ class MultilineTextDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(title),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      backgroundColor: const Color(0xFF333333),
       content: TextField(
         controller: textController,
         maxLines: null,
         expands: true,
         keyboardType: TextInputType.multiline,
         autofocus: true,
+        style: const TextStyle(color: Colors.white),
       ),
       actions: [
         TextButton(
