@@ -146,7 +146,8 @@ class Logger
   static final summary = <String>[];
 
   static var _severity = Constants.logSeverity.length - 1;
-  static RegExp _searchPattern = RegExp('', caseSensitive: false);
+  static var _searchString = '';
+  static RegExp _searchPattern = RegExp(_searchString, caseSensitive: false);
   static int _eventStart = startIndex;
   static int _eventEnd = endIndex;
   static int _repeatThreshold = 0;
@@ -200,7 +201,8 @@ class Logger
     summary.clear();
 
     _severity = Constants.logSeverity.length - 1;
-    _searchPattern = RegExp('', caseSensitive: false);
+    _searchString = '';
+    _searchPattern = RegExp(_searchString, caseSensitive: false);
     _eventStart = startIndex;
     _eventEnd = endIndex;
     _repeatThreshold = 0;
@@ -276,6 +278,7 @@ class Logger
   }
 
   static void setSearchString(String s) {
+    _searchString = s;
     s = s.toLowerCase();
     var eventRange = RegExp(r'\s*range:(-?\d+)?\.\.(-?\d+)?\s*').firstMatch(s);
     var hasRangeChanged = false;
@@ -317,7 +320,7 @@ class Logger
   }
 
   static String getSearchString() {
-    return _searchPattern.pattern;
+    return _searchString;
   }
 
   static Future getAllModsStatus() async {
