@@ -2,9 +2,11 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
+import 'package:log_viewer/providers/mod_manager.dart';
 
 class ModListPage extends StatelessWidget {
   final TabController tabController;
@@ -13,39 +15,29 @@ class ModListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const FutureBuilderExampleApp();
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => Logger.modManager),
+      ],
+      child: const ModListPageState(),
+    );
   }
 }
 
-class FutureBuilderExampleApp extends StatelessWidget {
-  const FutureBuilderExampleApp({super.key});
+class ModListPageState extends StatefulWidget {
+  const ModListPageState({super.key});
 
   @override
-  Widget build(BuildContext context) {
-      return const FutureBuilderExample();
-  }
+  State<ModListPageState> createState() => _ModListPageState();
 }
 
-class FutureBuilderExample extends StatefulWidget {
-  const FutureBuilderExample({super.key});
-
-  @override
-  State<FutureBuilderExample> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<FutureBuilderExample> {
+class _ModListPageState extends State<ModListPageState> {
   final _textController = TextEditingController(text: Logger.modManager.searchString);
-  var _mods = Logger.modManager.filteredMods;
-  var _dropdownValue = Logger.modManager.category;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
-    var mainWidget = Container(
+    var mods = context.watch<ModManager>().filteredMods;
+    return Container(
         color: Colors.black,
         child: Column(
             children: [
@@ -67,10 +59,7 @@ class _HomePageState extends State<FutureBuilderExample> {
                                   border: OutlineInputBorder(),
                                 ),
                                 onChanged: (text) {
-                                  setState(() {
-                                    Logger.modManager.searchString = text;
-                                    _mods = Logger.modManager.filteredMods;
-                                  });
+                                  Logger.modManager.searchString = text;
                                 })
                         ),
                         Container(
@@ -78,14 +67,10 @@ class _HomePageState extends State<FutureBuilderExample> {
                             height: 70,
                             width: 200,
                             child : DropdownMenu(
-                                initialSelection: _dropdownValue,
+                                initialSelection: Logger.modManager.category,
                                 textStyle: const TextStyle(color: Colors.white),
                                 onSelected: (ModCategory? value) {
-                                  setState(() {
-                                    _dropdownValue = value!;
-                                    Logger.modManager.category = value;
-                                    _mods = Logger.modManager.filteredMods;
-                                  });
+                                  Logger.modManager.category = value!;
                                 },
                                 dropdownMenuEntries: UnmodifiableListView(
                                   ModCategory.values.map((ModCategory cat) => DropdownMenuEntry(value: cat, label: cat.name)),
@@ -100,9 +85,9 @@ class _HomePageState extends State<FutureBuilderExample> {
                       alignment: Alignment.bottomRight,
                       children: [
                         ListView.builder(
-                          itemCount: _mods.length,
+                          itemCount: mods.length,
                           itemBuilder: (context, index) {
-                            var mod = _mods[index];
+                            var mod = mods[index];
                             return SelectableText(
                               mod.guid,
                               textAlign: TextAlign.left,
@@ -130,15 +115,6 @@ class _HomePageState extends State<FutureBuilderExample> {
               )
             ]
         )
-    );
-    return FutureBuilder(
-        future: Logger.modStatusNetRequest,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return mainWidget;
-          }
-          return Stack(children: [mainWidget, const Center(child: CircularProgressIndicator())]);
-        }
     );
   }
 }

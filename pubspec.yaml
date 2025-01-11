@@ -37,6 +37,7 @@ dependencies:
   path: ^1.9.0
   sqflite_common_ffi: ^2.3.4+4
   shared_preferences: ^2.3.5
+  provider: ^6.1.2
 
 
 dev_dependencies:

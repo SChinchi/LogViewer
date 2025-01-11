@@ -9,98 +9,9 @@ import 'package:log_viewer/settings.dart';
 
 import 'constants.dart';
 import 'database.dart';
+import 'providers/mod_manager.dart';
 
 final _regExp = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
-
-class Mod {
-  String guid;
-  late String fullName;
-  bool isDeprecated = false;
-  bool isOld = false;
-  bool isProblematic = false;
-
-  Mod(this.guid) {
-    var pattern = RegExp(r'^(.*)-\d+.\d+.\d+');
-    var name = pattern.firstMatch(guid);
-    fullName = name != null ? name.group(1)! : guid;
-  }
-}
-
-enum ModCategory {
-  All,
-  Deprecated,
-  Old,
-  Problematic,
-}
-
-class ModManager {
-  final mods = <Mod>[];
-  final filteredMods = <Mod>[];
-  final _nameToMod = <String, Mod>{};
-
-  var _category = ModCategory.All;
-  set category(ModCategory value)
-  {
-    if (_category == value) {
-      return;
-    }
-    _category = value;
-    _recalculateFilteredMods();
-  }
-  ModCategory get category => _category;
-
-  var _searchString = RegExp('', caseSensitive: false);
-  set searchString(String value) {
-    if (value != _searchString.pattern) {
-      try {
-        _searchString = RegExp(value, caseSensitive: false);
-        _recalculateFilteredMods();
-      } on FormatException catch (_) {
-        // Capturing each keystroke of the search means an invalid regex is possible
-      }
-    }
-  }
-  String get searchString => _searchString.pattern;
-
-  bool _passesFilter(Mod mod) {
-    if (_category == ModCategory.All
-        || (_category == ModCategory.Deprecated && mod.isDeprecated)
-        || (_category == ModCategory.Old && mod.isOld && !mod.isDeprecated)
-        || (_category == ModCategory.Problematic && mod.isProblematic)) {
-      return _searchString.pattern.isEmpty || mod.guid.contains(_searchString);
-    }
-    return false;
-  }
-
-  void _recalculateFilteredMods() {
-    filteredMods.clear();
-    for (var mod in mods) {
-      if (_passesFilter(mod)) {
-        filteredMods.add(mod);
-      }
-    }
-  }
-
-  void reset() {
-    mods.clear();
-    filteredMods.clear();
-    _nameToMod.clear();
-    _category = ModCategory.All;
-    _searchString = RegExp('', caseSensitive: false);
-  }
-
-  void add(Mod mod) {
-    mods.add(mod);
-    if (_passesFilter(mod)) {
-      filteredMods.add(mod);
-    }
-    _nameToMod[mod.fullName] = mod;
-  }
-
-  Mod? getMod(String name) {
-    return _nameToMod[name];
-  }
-}
 
 class Event {
   late int severity;
@@ -350,6 +261,10 @@ class Logger
       }
     }
 
+    if (toUpdate.isEmpty) {
+      modManager.recalculateFilteredMods();
+    }
+
     // TODO: Ensure network permissions are granted and catch any network errors
     return Future(() => {
       http.get(Uri.parse('https://thunderstore.io/api/v1/package/')).then((response) {
@@ -385,6 +300,7 @@ class Logger
             }
           }
         }
+        modManager.recalculateFilteredMods();
       })
     });
   }
