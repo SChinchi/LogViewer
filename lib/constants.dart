@@ -20,4 +20,10 @@ class Constants {
 
   static const settingsPage = 'Settings';
   static const menuOptions = [settingsPage];
+  static const selectionOptions = [
+    'Add to deprecated/old whitelist',
+    'Remove from deprecated/old whitelist',
+    'Add to problematic list',
+    'Remove from problematic list',
+  ];
 }

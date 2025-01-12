@@ -66,14 +66,15 @@ class _ModListPageState extends State<ModListPageState> {
                             padding: const EdgeInsets.fromLTRB(10, 10, 0, 0),
                             height: 70,
                             width: 200,
-                            child : DropdownMenu(
+                            child: DropdownMenu(
                                 initialSelection: Logger.modManager.category,
                                 textStyle: const TextStyle(color: Colors.white),
                                 onSelected: (ModCategory? value) {
                                   Logger.modManager.category = value!;
                                 },
                                 dropdownMenuEntries: UnmodifiableListView(
-                                  ModCategory.values.map((ModCategory cat) => DropdownMenuEntry(value: cat, label: cat.name)),
+                                  ModCategory.values.map((ModCategory cat) =>
+                                      DropdownMenuEntry(value: cat, label: cat.name)),
                                 )
                             )
                         )
@@ -88,15 +89,32 @@ class _ModListPageState extends State<ModListPageState> {
                           itemCount: mods.length,
                           itemBuilder: (context, index) {
                             var mod = mods[index];
-                            return SelectableText(
-                              mod.guid,
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                color: mod.isDeprecated ? Colors.red
-                                    : mod.isOld ? Colors.grey
-                                    : mod.isProblematic ? Colors.yellow
-                                    : Colors.white
-                              ),
+                            return GestureDetector(
+                                child: Text(
+                                  mod.guid,
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(
+                                      color: mod.isDeprecated ? Colors.red
+                                          : mod.isOld ? Colors.grey
+                                          : mod.isProblematic ? Colors.yellow
+                                          : Colors.white,
+                                      backgroundColor: Logger.modManager.mods[index].isSelected ? Colors.grey[700]
+                                          : Colors.black
+                                  ),
+                                ),
+                                onLongPress: () {
+                                  if (!Logger.modManager.isInSelectionMode) {
+                                    Logger.modManager.toggleSelected(index);
+                                  }
+                                },
+                                onTap: () {
+                                  if (Logger.modManager.isInSelectionMode) {
+                                    // Need to trigger a state update because [isInSelectionMode] doesn't change
+                                    setState(() {
+                                      Logger.modManager.toggleSelected(index);
+                                    });
+                                  }
+                                }
                             );
                           },
                         ),

@@ -6,6 +6,7 @@ class Mod {
   bool isDeprecated = false;
   bool isOld = false;
   bool isProblematic = false;
+  bool isSelected = false;
 
   Mod(this.guid) {
     var pattern = RegExp(r'^(.*)-\d+.\d+.\d+');
@@ -24,6 +25,7 @@ enum ModCategory {
 class ModManager with ChangeNotifier {
   final mods = <Mod>[];
   final filteredMods = <Mod>[];
+  var isInSelectionMode = false;
   final _nameToMod = <String, Mod>{};
 
   var _category = ModCategory.All;
@@ -73,6 +75,7 @@ class ModManager with ChangeNotifier {
   void reset() {
     mods.clear();
     filteredMods.clear();
+    isInSelectionMode = false;
     _nameToMod.clear();
     _category = ModCategory.All;
     _searchString = RegExp('', caseSensitive: false);
@@ -88,6 +91,28 @@ class ModManager with ChangeNotifier {
 
   Mod? getMod(String name) {
     return _nameToMod[name];
+  }
+
+  void toggleSelected(int index) {
+    if (index < mods.length) {
+      var oldMode = mods.any((m) => m.isSelected);
+      mods[index].isSelected = !mods[index].isSelected;
+      var newMode = mods.any((m) => m.isSelected);
+      if (oldMode != newMode) {
+        isInSelectionMode = newMode;
+        notifyListeners();
+      }
+    }
+  }
+
+  void clearSelections() {
+    if (isInSelectionMode) {
+      for (var mod in mods) {
+        mod.isSelected = false;
+      }
+      isInSelectionMode = false;
+      notifyListeners();
+    }
   }
 
   @override

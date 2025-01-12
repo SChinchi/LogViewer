@@ -9,7 +9,8 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
   - Deprecated/old mods are flagged appropriately by checking their status on Thunderstore.
     - Whitelist for any mods that fall under these conditions but are still functional.
   - Custom list for generally problematic mods.
-  - Copy to clipboard.
+  - Long press for custom selection. It is recommended to use this way to add mods to any white-/blacklists.
+  - Copy all filtered mods to clipboard.
 - A console UI with search and log level filters.
   - Repeated events are bundled together for compression and to highlight potential error spam. Indicated with an orange number at the bottom right.
   - The search supports regex. The following flags can further limit a search:
