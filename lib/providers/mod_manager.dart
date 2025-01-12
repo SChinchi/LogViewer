@@ -16,9 +16,13 @@ class Mod {
 }
 
 enum ModCategory {
+  // ignore: constant_identifier_names
   All,
+  // ignore: constant_identifier_names
   Deprecated,
+  // ignore: constant_identifier_names
   Old,
+  // ignore: constant_identifier_names
   Problematic,
 }
 

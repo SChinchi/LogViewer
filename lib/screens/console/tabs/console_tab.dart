@@ -10,23 +10,23 @@ class ConsolePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SliderExample();
+    return const ConsolePageState();
   }
 }
 
-class SliderExample extends StatefulWidget {
-  const SliderExample({super.key});
+class ConsolePageState extends StatefulWidget {
+  const ConsolePageState({super.key});
 
   @override
-  State<SliderExample> createState() => _SliderExampleState();
+  State<ConsolePageState> createState() => _ConsolePageState();
 }
 
-class _SliderExampleState extends State<SliderExample> {
-  double _currentSliderValue = Logger.getSeverity().toDouble();
+class _ConsolePageState extends State<ConsolePageState> {
+  var _currentSliderValue = Logger.getSeverity().toDouble();
   var _status = Constants.logSeverity.last;
   var _loggedEvents = Logger.filteredEvents;
-  final ScrollController _scrollController = ScrollController();
-  final TextEditingController _textController = TextEditingController(text: Logger.getSearchString());
+  final _scrollController = ScrollController();
+  final _textController = TextEditingController(text: Logger.getSearchString());
 
   @override
   Widget build(BuildContext context) {

@@ -11,6 +11,7 @@ class DB {
   static init() async {
     WidgetsFlutterBinding.ensureInitialized();
     if (Platform.isWindows || Platform.isLinux) {
+      databaseFactoryOrNull = null;
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
