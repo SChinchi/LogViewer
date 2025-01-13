@@ -76,6 +76,7 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
                     onPressed: () async {
                       var text = Logger.modManager.mods.where((m) => m.isSelected).map((m) => m.guid);
                       await Clipboard.setData(ClipboardData(text: text.join('\n')));
+                      Logger.modManager.clearSelections();
                     },
                   ),
                   PopupMenuButton<String>(
