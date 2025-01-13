@@ -263,6 +263,7 @@ class Logger
 
     if (toUpdate.isEmpty) {
       modManager.recalculateFilteredMods();
+      return;
     }
 
     // TODO: Ensure network permissions are granted and catch any network errors
@@ -276,7 +277,7 @@ class Logger
               var mod = Logger.modManager.getMod(fullName);
               if (mod != null) {
                 var whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
-                mod.isDeprecated = !whitelisted && tsMod['is_deprecated'] == 1;
+                mod.isDeprecated = !whitelisted && tsMod['is_deprecated'];
                 mod.isOld = !whitelisted
                     && cutOffDate != null
                     && DateTime

@@ -90,7 +90,9 @@ class ModManager with ChangeNotifier {
     if (_passesFilter(mod)) {
       filteredMods.add(mod);
     }
-    _nameToMod[mod.fullName] = mod;
+    if (!_nameToMod.containsKey(mod.fullName)) {
+      _nameToMod[mod.fullName] = mod;
+    }
   }
 
   Mod? getMod(String name) {
