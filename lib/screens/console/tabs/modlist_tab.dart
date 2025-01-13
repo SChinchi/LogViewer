@@ -69,6 +69,13 @@ class _ModListPageState extends State<ModListPageState> {
                             child: DropdownMenu(
                                 initialSelection: Logger.modManager.category,
                                 textStyle: const TextStyle(color: Colors.white),
+                                inputDecorationTheme: InputDecorationTheme(
+                                    isDense: true,
+                                    constraints: BoxConstraints.tight(const Size.fromHeight(50)),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                ),
                                 onSelected: (ModCategory? value) {
                                   Logger.modManager.category = value!;
                                 },
