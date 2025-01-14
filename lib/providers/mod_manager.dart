@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 class Mod {
   String guid;
   late String fullName;
+  late int index;
   bool isDeprecated = false;
   bool isOld = false;
   bool isProblematic = false;
@@ -86,6 +87,7 @@ class ModManager with ChangeNotifier {
   }
 
   void add(Mod mod) {
+    mod.index = mods.length;
     mods.add(mod);
     if (_passesFilter(mod)) {
       filteredMods.add(mod);
@@ -99,15 +101,13 @@ class ModManager with ChangeNotifier {
     return _nameToMod[name];
   }
 
-  void toggleSelected(int index) {
-    if (index < mods.length) {
-      var oldMode = mods.any((m) => m.isSelected);
-      mods[index].isSelected = !mods[index].isSelected;
-      var newMode = mods.any((m) => m.isSelected);
-      if (oldMode != newMode) {
-        isInSelectionMode = newMode;
-        notifyListeners();
-      }
+  void toggleSelected(Mod mod) {
+    var oldMode = mods.any((m) => m.isSelected);
+    mod.isSelected = !mod.isSelected;
+    var newMode = mods.any((m) => m.isSelected);
+    if (oldMode != newMode) {
+      isInSelectionMode = newMode;
+      notifyListeners();
     }
   }
 

@@ -105,20 +105,20 @@ class _ModListPageState extends State<ModListPageState> {
                                           : mod.isOld ? Colors.grey
                                           : mod.isProblematic ? Colors.yellow
                                           : Colors.white,
-                                      backgroundColor: Logger.modManager.mods[index].isSelected ? Colors.grey[700]
+                                      backgroundColor: mod.isSelected ? Colors.grey[700]
                                           : Colors.black
                                   ),
                                 ),
                                 onLongPress: () {
                                   if (!Logger.modManager.isInSelectionMode) {
-                                    Logger.modManager.toggleSelected(index);
+                                    Logger.modManager.toggleSelected(mod);
                                   }
                                 },
                                 onTap: () {
                                   if (Logger.modManager.isInSelectionMode) {
                                     // Need to trigger a state update because [isInSelectionMode] doesn't change
                                     setState(() {
-                                      Logger.modManager.toggleSelected(index);
+                                      Logger.modManager.toggleSelected(mod);
                                     });
                                   }
                                 }
