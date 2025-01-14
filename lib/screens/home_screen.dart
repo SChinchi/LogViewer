@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
@@ -84,6 +85,9 @@ class _FilePickerState extends State<_FilePicker>{
           if (!Logger.parseFile(result!.files[0].xFile.path) || Logger.events.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
             return;
+          }
+          if (Platform.isAndroid || Platform.isIOS) {
+            FilePicker.platform.clearTemporaryFiles();
           }
           Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
         }
