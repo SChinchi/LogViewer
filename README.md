@@ -17,6 +17,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
     - `repeat:N` filters for events that are repeated at least N times in a row.
     - `range:start..end` filters for event indices. If either value is omitted, a default is used. Negative numbers count from the end of the list, e.g., `range:-5..` is the last 5 events.
 - A diagnostics tab that collects various issues that may highlight why a profile leads to errors.
+  - **Missing Dependencies & Incompatibilities**: for mods failing to load due to dependency issues.
   - **Mods Crashing On Awake**: errors with `BepInEx.Bootstrap.Chainloader:Start()`. Incomplete mod loading may lead to issues for other mods.
   - **Stuck Loading x%**: for errors that cause the game to hang on the loading screen. 
   - **Missing Member Exception**: for outdated mods that attempt to call missing code.
@@ -33,7 +34,6 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
   - Add `exclude:term` search filter
   - Consider making long error messages collapsable/expandable upon clicking to reduce the list's length when error spam is prominent.
 - Diagnostics
-  - List any mods not loading due to missing dependencies.
   - Capture mods that corrupt code with bad IL.
 
 ## How to build

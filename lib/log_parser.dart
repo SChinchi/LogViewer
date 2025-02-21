@@ -325,12 +325,14 @@ class ListItem {
 }
 
 class Diagnostics {
+  static List<ListItem> dependencyIssues = [];
   static List<ListItem> modsCrashingOnAwake = [];
   static List<ListItem> stuckLoading = [];
   static List<ListItem> missingMemberExceptions = [];
   static List<ListItem> mostCommonRecurrentErrors = [];
 
   static _reset() {
+    dependencyIssues.clear();
     modsCrashingOnAwake.clear();
     stuckLoading.clear();
     missingMemberExceptions.clear();
@@ -339,6 +341,8 @@ class Diagnostics {
 
   static analyse() {
     _reset();
+    var missingDependency = RegExp(r'^Could not load \[.*\] because it has missing dependencies:');
+    var incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');
     var chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start\(\)');
     var missingPattern = RegExp('^Missing(Field|Method)Exception');
     var stuckLoadingPattern = RegExp(r'RoR2\.RoR2Application\+<LoadGameContent>d__\d+\.MoveNext \(\)');
@@ -348,6 +352,9 @@ class Diagnostics {
     for (var e in Logger.events) {
       if (e.modName != null) {
         currentMod = e.modName!;
+      }
+      if (missingDependency.firstMatch(e.string) != null || incompatibleDependency.firstMatch(e.string) != null) {
+        dependencyIssues.add(ListItem(text: e.fullString, color: e.color));
       }
       if (missingPattern.firstMatch(e.string) != null && !encounteredExceptions.contains(e.fullStringNoPrefix)) {
         missingMemberExceptions.add(ListItem(text: e.fullString, color: e.color));

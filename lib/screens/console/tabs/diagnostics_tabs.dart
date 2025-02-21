@@ -17,6 +17,9 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     var data = <ExpandableList>[];
+    if (Diagnostics.dependencyIssues.isNotEmpty) {
+      data.add(ExpandableList(heading: 'Missing Dependencies & Incompatibilities', items: Diagnostics.dependencyIssues));
+    }
     if (Diagnostics.modsCrashingOnAwake.isNotEmpty) {
       data.add(ExpandableList(heading: 'Mods Crashing On Awake', items: Diagnostics.modsCrashingOnAwake));
     }
