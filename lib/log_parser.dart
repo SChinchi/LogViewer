@@ -159,10 +159,19 @@ class Logger
         event.fullString = '${event.index.toString().padLeft(length, '0')} ${event.fullString}';
       }
 
+      var bepInExLine = RegExp(r'^BepInEx \d+\.\d+\.\d+.\d+');
+      var unityLine = RegExp(r'^Running under Unity');
+      var patcherLine = RegExp(r'^Loaded \d+ patcher method from \[.*\]');
       var lastSummaryLine = RegExp(r'^\d+ plugins to load$');
       for (var event in events) {
-        summary.add(event.string);
-        if (lastSummaryLine.firstMatch(event.string) != null) {
+        var isLastSummaryLine = lastSummaryLine.firstMatch(event.string) != null;
+        if (isLastSummaryLine ||
+            bepInExLine.firstMatch(event.string) != null ||
+            unityLine.firstMatch(event.string) != null ||
+            patcherLine.firstMatch(event.string) != null) {
+          summary.add(event.string);
+        }
+        if (isLastSummaryLine) {
           break;
         }
       }
