@@ -38,6 +38,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.4+4
   shared_preferences: ^2.3.5
   provider: ^6.1.2
+  archive: ^4.0.2
 
 
 dev_dependencies:

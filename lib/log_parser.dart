@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -117,23 +116,6 @@ class Logger
     _eventStart = startIndex;
     _eventEnd = endIndex;
     _repeatThreshold = 0;
-  }
-
-  static bool parseFile(String path) {
-    try {
-      var file = File(path);
-      if (!file.existsSync()) {
-        return false;
-      }
-      var lines = file.readAsLinesSync();
-      if (lines.isEmpty) {
-        return false;
-      }
-      return parseLines(lines);
-    }
-    on Exception catch (_) {
-      return false;
-    }
   }
 
   static bool parseLines(List<String> lines)

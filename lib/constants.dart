@@ -26,4 +26,6 @@ class Constants {
     'Add to problematic list',
     'Remove from problematic list',
   ];
+
+  static const zipHeader = [80, 75, 3, 4];
 }

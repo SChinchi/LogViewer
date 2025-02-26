@@ -4,6 +4,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 
 ## Features
 
+- Supports plain text and .zip files.
 - Drag-n-drop files on the executable for easy loading.
 - Mod list inspector with search filtering.
   - Deprecated/old mods are flagged appropriately by checking their status on Thunderstore.
@@ -27,7 +28,6 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 
 - Main screen
   - Add loading progress bar for big files. Optimisation might also be possible when parsing the log.
-  - Look into loading a log from inside an archive.
 - Summary
   - Currently very much WIP. Maybe trim the information shown, maybe combine it with Diagnostics, maybe get rid of it.
 - Console

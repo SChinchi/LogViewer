@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
@@ -25,9 +27,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (MyApp.args.isNotEmpty && Logger.parseFile(MyApp.args[0]) && Logger.events.isNotEmpty) {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (MyApp.args.isNotEmpty) {
+        final fileLines = await _loadFromFile(MyApp.args[0]);
+        if (mounted) {
+          _tryNavigate(context, fileLines);
+        }
       }
     });
   }
@@ -80,16 +85,15 @@ class _FilePickerState extends State<_FilePicker>{
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () async {
-        result = await FilePicker.platform.pickFiles(allowMultiple: true);
-        if (context.mounted) {
-          if (!Logger.parseFile(result!.files[0].xFile.path) || Logger.events.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
-            return;
-          }
+        result = await FilePicker.platform.pickFiles(allowMultiple: false);
+        if (result != null) {
+          final fileLines = await _loadFromFile(result!.files[0].xFile.path);
           if (Platform.isAndroid || Platform.isIOS) {
             FilePicker.platform.clearTemporaryFiles();
           }
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
+          if (context.mounted) {
+            _tryNavigate(context, fileLines);
+          }
         }
       },
       child: const Text(Constants.loadButton),
@@ -143,15 +147,27 @@ class _DropZoneState extends State<_DropZone> {
   }
 
   Future<void> _onPerformDrop(PerformDropEvent event) async {
-    var reader = event.session.items.first.dataReader!;
-    reader.getFile(Formats.plainTextFile, (file) async {
-      var stream = await file.getStream().toList();
-      var s = utf8.decode(stream[0]);
-      Logger.parseLines(s.split('\n'));
-      if (Logger.events.isNotEmpty && mounted) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
+    final reader = event.session.items.first.dataReader!;
+    var progress = reader.getFile(Formats.plainTextFile, (file) async {
+      final stream = await file.getStream().toList();
+      final fileLines = utf8.decode(stream[0]).split('\n');
+      if (mounted) {
+        _tryNavigate(context, fileLines);
       }
     });
+    if (progress != null) {
+      return;
+    }
+    progress = reader.getFile(Formats.zip, (file) async {
+      final stream = await file.getStream().toList();
+      final fileLines = _readZip(stream[0]);
+      if (mounted) {
+        _tryNavigate(context, fileLines);
+      }
+    });
+    if (progress == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
+    }
   }
 
   void _onDropLeave(DropEvent event) {
@@ -175,3 +191,33 @@ Widget _upload = const Column(
       )
     ]
 );
+
+void _tryNavigate(BuildContext context, List<String>? fileLines) {
+  if (fileLines == null || !Logger.parseLines(fileLines) || Logger.events.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
+    return;
+  }
+  Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
+}
+
+Future<List<String>?> _loadFromFile(String path) async {
+  final file = File(path);
+  if (!file.existsSync()) {
+    return null;
+  }
+  try {
+    final header = await file.openRead(0, 4).toList();
+    if (listEquals(header[0], Constants.zipHeader)) {
+      return _readZip(file.readAsBytesSync());
+    }
+    return file.readAsLinesSync();
+  }
+  on Exception catch (_) {
+    return null;
+  }
+}
+
+List<String>? _readZip(List<int> bytes) {
+  final zip = ZipDecoder().decodeBytes(bytes);
+  return zip.isNotEmpty ? utf8.decode(zip.first.content).split('\n') : null;
+}
