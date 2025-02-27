@@ -10,7 +10,11 @@ import 'constants.dart';
 import 'database.dart';
 import 'providers/mod_manager.dart';
 
-final _regExp = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
+final _consoleSearchFilterPattens = [
+  r'\s*(?<exclude>exclude:(?<exclude_term>\(.*\)|[^(\s]\S*))\s*',
+  r'\s*(?<range>range:(?<r0>-?\d*)\.\.(?<r1>-?\d*))\s*',
+  r'\s*(?<repeat>repeat:(?<repeat_num>\d+))\s*'
+];
 
 class Event {
   late int severity;
@@ -47,6 +51,9 @@ class Event {
 
 class Logger
 {
+  static final _eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
+  static final _filterPattern = RegExp('^(${_consoleSearchFilterPattens.join('|')})', caseSensitive: false);
+
   static const intMin = ~(-1 >>> 1);
   static const startIndex = 0;
   static const endIndex = 0;
@@ -57,15 +64,16 @@ class Logger
 
   static var _severity = Constants.logSeverity.length - 1;
   static var _searchString = '';
-  static RegExp _searchPattern = RegExp(_searchString, caseSensitive: false);
-  static int _eventStart = startIndex;
-  static int _eventEnd = endIndex;
-  static int _repeatThreshold = 0;
+  static var _searchPattern = RegExp(_searchString, caseSensitive: false);
+  static var _excludePattern = RegExp('', caseSensitive: false);
+  static var _eventStart = startIndex;
+  static var _eventEnd = endIndex;
+  static var _repeatThreshold = 0;
   static var filteredEvents = <Event>[];
   static late Future modStatusNetRequest;
 
   static void _addEvent(String s) {
-    var match = _regExp.firstMatch(s);
+    var match = _eventPattern.firstMatch(s);
     if (match == null) {
       return;
     }
@@ -88,7 +96,8 @@ class Logger
 
   static bool _passesFilter(Event event) {
     if (event.severity <= _severity && event.repeat >= _repeatThreshold) {
-      return _searchPattern.pattern.isEmpty || event.fullString.contains(_searchPattern);
+      return (_searchPattern.pattern.isEmpty || event.fullString.contains(_searchPattern))
+          && (_excludePattern.pattern.isEmpty || !event.fullString.contains(_excludePattern));
     }
     return false;
   }
@@ -124,7 +133,7 @@ class Logger
     try {
       var sb = StringBuffer(lines[0]);
       for (var line in lines.sublist(1, lines.length)) {
-        var match = _regExp.firstMatch(line);
+        var match = _eventPattern.firstMatch(line);
         if (match != null) {
           _addEvent(sb.toString().trimRight());
           sb.clear();
@@ -182,42 +191,75 @@ class Logger
   static void setSearchString(String s) {
     _searchString = s;
     s = s.toLowerCase();
-    var eventRange = RegExp(r'\s*range:(-?\d+)?\.\.(-?\d+)?\s*').firstMatch(s);
-    var hasRangeChanged = false;
-    if (eventRange != null) {
-      var start = eventRange.group(1) != null ? int.tryParse(eventRange.group(1)!) ?? startIndex : startIndex;
-      start = start >= 0 ? min(start, events.length) : max(startIndex, events.length+start);
-      var end = eventRange.group(2) != null ? int.tryParse(eventRange.group(2)!) ?? intMin : intMin;
-      end = end > 0 ? max(end-events.length, -events.length) : end == intMin ? startIndex : max(-events.length, end);
-      hasRangeChanged = start != _eventStart || end != _eventEnd;
-      _eventStart = start;
-      _eventEnd = end;
-      s = s.replaceFirst(eventRange.group(0)!, '');
+    var recalculateFilters = false;
+    var match = _filterPattern.firstMatch(s);
+    final matches = <String, List<String?>>{};
+    while (match != null) {
+      if (match.namedGroup('exclude') != null) {
+        matches['exclude'] = [match.namedGroup('exclude_term')];
+      }
+      else if (match.namedGroup('range') != null) {
+        matches['range'] = [match.namedGroup('r0'), match.namedGroup('r1')];
+      }
+      else if (match.namedGroup('repeat') != null) {
+        matches['repeat'] = [match.namedGroup('repeat_num')];
+      }
+      s = s.substring(match.group(0)!.length);
+      match = _filterPattern.firstMatch(s);
+    }
+    if (matches['exclude'] != null) {
+      try {
+        final excludeTerm = matches['exclude']![0]!;
+        if (excludeTerm != _excludePattern.pattern) {
+          _excludePattern = RegExp(excludeTerm, caseSensitive: false);
+          recalculateFilters = true;
+        }
+      }
+      on FormatException catch (_) {
+        // Capturing each keystroke of the search means an invalid regex is possible
+      }
     }
     else {
-      hasRangeChanged = _eventStart != startIndex || _eventEnd != endIndex;
+      recalculateFilters |= _excludePattern.pattern.isNotEmpty;
+      _excludePattern = RegExp('', caseSensitive: false);
+    }
+    if (matches['range'] != null) {
+      final r0 = matches['range']![0];
+      final r1 = matches['range']![1];
+      var start = r0 != null ? int.tryParse(r0) ?? startIndex : startIndex;
+      start = start >= 0 ? min(start, events.length) : max(startIndex, events.length+start);
+      var end = r1 != null ? int.tryParse(r1) ?? intMin : intMin;
+      end = end > 0 ? max(end-events.length, -events.length) : end == intMin ? startIndex : max(-events.length, end);
+      recalculateFilters |= start != _eventStart || end != _eventEnd;
+      _eventStart = start;
+      _eventEnd = end;
+    }
+    else {
+      recalculateFilters |= _eventStart != startIndex || _eventEnd != endIndex;
       _eventStart = startIndex;
       _eventEnd = endIndex;
     }
-    var repeat = RegExp(r'\s*repeat:(\d+)\s*').firstMatch(s);
-    var hasThresholdChanged = false;
-    if (repeat != null) {
-      var value = int.parse(repeat.group(1)!);
-      hasThresholdChanged = value != _repeatThreshold;
-      _repeatThreshold = value;
-      s = s.replaceFirst(repeat.group(0)!, '');
+    if (matches['repeat'] != null) {
+      final repeatValue = int.parse(matches['repeat']![0]!);
+      if (repeatValue != _repeatThreshold) {
+        _repeatThreshold = repeatValue;
+        recalculateFilters = true;
+      }
     }
     else {
-      hasThresholdChanged = _repeatThreshold != 0;
+      recalculateFilters |= _repeatThreshold != 0;
       _repeatThreshold = 0;
     }
-    if (s != _searchPattern.pattern || hasRangeChanged || hasThresholdChanged) {
+    if (s != _searchPattern.pattern) {
       try {
         _searchPattern = RegExp(s, caseSensitive: false);
-        _recalculateFilteredEvents();
+        recalculateFilters = true;
       } on FormatException catch (_) {
         // Capturing each keystroke of the search means an invalid regex is possible
       }
+    }
+    if (recalculateFilters) {
+      _recalculateFilteredEvents();
     }
   }
 

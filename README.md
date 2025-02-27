@@ -15,6 +15,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 - A console UI with search and log level filters.
   - Repeated events are bundled together for compression and to highlight potential error spam. Indicated with an orange number at the bottom right.
   - The search supports regex. The following flags can further limit a search:
+    - `exclude:term` or `exclude:(term|another|and with spaces)` filters events that contain any of the specified keywords. 
     - `repeat:N` filters for events that are repeated at least N times in a row.
     - `range:start..end` filters for event indices. If either value is omitted, a default is used. Negative numbers count from the end of the list, e.g., `range:-5..` is the last 5 events.
 - A diagnostics tab that collects various issues that may highlight why a profile leads to errors.
@@ -28,10 +29,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 
 - Main screen
   - Add loading progress bar for big files. Optimisation might also be possible when parsing the log.
-- Summary
-  - Currently very much WIP. Maybe trim the information shown, maybe combine it with Diagnostics, maybe get rid of it.
 - Console
-  - Add `exclude:term` search filter
   - Consider making long error messages collapsable/expandable upon clicking to reduce the list's length when error spam is prominent.
 - Diagnostics
   - Capture mods that corrupt code with bad IL.
