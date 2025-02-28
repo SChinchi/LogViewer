@@ -24,6 +24,7 @@ class Event {
   late String fullStringNoPrefix;
   late Color color;
   late int index;
+  late int lineCount;
   int repeat = 0;
   String? modName;
 
@@ -42,6 +43,7 @@ class Event {
     else {
       color = Colors.white;
     }
+    lineCount = fullString.split('\n').length;
     var modPattern = RegExp(r'^TS Manifest: (.*)').firstMatch(match.group(4)!);
     if (modPattern != null) {
       modName = modPattern.group(1);

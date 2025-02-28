@@ -13,6 +13,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
   - Long press for custom selection. It is recommended to use this way to add mods to any white-/blacklists.
   - Copy all filtered mods to clipboard.
 - A console UI with search and log level filters.
+  - Long messages are collapsible. Configurable. 
   - Repeated events are bundled together for compression and to highlight potential error spam. Indicated with an orange number at the bottom right.
   - The search supports regex. The following flags can further limit a search:
     - `exclude:term` or `exclude:(term|another|and with spaces)` filters events that contain any of the specified keywords. 
@@ -29,8 +30,6 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 
 - Main screen
   - Add loading progress bar for big files. Optimisation might also be possible when parsing the log.
-- Console
-  - Consider making long error messages collapsable/expandable upon clicking to reduce the list's length when error spam is prominent.
 - Diagnostics
   - Capture mods that corrupt code with bad IL.
 

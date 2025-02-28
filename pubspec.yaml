@@ -39,6 +39,7 @@ dependencies:
   shared_preferences: ^2.3.5
   provider: ^6.1.2
   archive: ^4.0.2
+  expandable: ^5.0.1
 
 
 dev_dependencies:

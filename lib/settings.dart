@@ -7,12 +7,14 @@ class Settings {
   static const KEY_CUT_OFF_DATE = 'cut_off_date';
   static const KEY_DEPRECATED_AND_OLD_WHITELIST = 'deprecated_and_old_whitelist';
   static const KEY_PROBLEMATIC_MODLIST = 'problematic_modlist';
+  static const KEY_CONSOLE_EVENT_MAX_LINES = 'console_event_max_lines';
 
   static late SharedPreferencesWithCache _prefs;
   static late bool _useCutOffDate;
   static DateTime? _cutOffDate;
   static late List<String> _deprecatedAndOldWhitelist;
   static late List<String> _problematicModlist;
+  static late int _consoleEventMaxLines;
 
   static init() async {
     _prefs = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
@@ -20,6 +22,7 @@ class Settings {
     _cutOffDate = DateTime.tryParse(_prefs.getString(KEY_CUT_OFF_DATE) ?? '');
     _deprecatedAndOldWhitelist = _prefs.getStringList(KEY_DEPRECATED_AND_OLD_WHITELIST) ?? [];
     _problematicModlist = _prefs.getStringList(KEY_PROBLEMATIC_MODLIST) ?? [];
+    _consoleEventMaxLines = _prefs.getInt(KEY_CONSOLE_EVENT_MAX_LINES) ?? 5;
   }
 
   static setUseCutOffDate(bool value) async {
@@ -67,4 +70,6 @@ class Settings {
   }
 
   static List<String> getProblematicModlist() => _problematicModlist;
+
+  static int getConsoleEventMaxLines() => _consoleEventMaxLines;
 }
