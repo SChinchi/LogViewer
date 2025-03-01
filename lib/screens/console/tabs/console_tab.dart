@@ -199,7 +199,7 @@ class _ExpandableContainer extends StatelessWidget {
                   collapsed: Text(
                     event.fullString,
                     style: TextStyle(color: event.color),
-                    maxLines: maxLines,
+                    maxLines: maxLines > 0 ? maxLines : null,
                     overflow: TextOverflow.fade,
                   ),
                   expanded: Text(
@@ -218,7 +218,7 @@ class _ExpandableContainer extends StatelessWidget {
                   },
                 ),
               ),
-              if (event.lineCount > maxLines)
+              if (maxLines > 0 && event.lineCount > maxLines)
                 Positioned(
                   top: -10,
                   right: 5,

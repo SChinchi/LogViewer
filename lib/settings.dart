@@ -22,7 +22,7 @@ class Settings {
     _cutOffDate = DateTime.tryParse(_prefs.getString(KEY_CUT_OFF_DATE) ?? '');
     _deprecatedAndOldWhitelist = _prefs.getStringList(KEY_DEPRECATED_AND_OLD_WHITELIST) ?? [];
     _problematicModlist = _prefs.getStringList(KEY_PROBLEMATIC_MODLIST) ?? [];
-    _consoleEventMaxLines = _prefs.getInt(KEY_CONSOLE_EVENT_MAX_LINES) ?? 5;
+    _consoleEventMaxLines = _prefs.getInt(KEY_CONSOLE_EVENT_MAX_LINES) ?? 7;
   }
 
   static setUseCutOffDate(bool value) async {
@@ -70,6 +70,14 @@ class Settings {
   }
 
   static List<String> getProblematicModlist() => _problematicModlist;
+
+  static setConsoleEventMaxLines(int value) async {
+    if (value < 0) {
+      value = 0;
+    }
+    _consoleEventMaxLines = value;
+    await _prefs.setInt(KEY_CONSOLE_EVENT_MAX_LINES, value);
+  }
 
   static int getConsoleEventMaxLines() => _consoleEventMaxLines;
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:log_viewer/constants.dart';
 
 import '../log_parser.dart';
@@ -15,10 +16,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   var _cutOffDateEnabled = Settings.getUseCutOffDate();
   final _whitelistTextController = TextEditingController();
   final _problematicTextController = TextEditingController();
+  final _collapsibleTextController = TextEditingController();
   late String _whitelistOldText;
   late String _whitelistSubtitle;
   late String _problematicSubtitle;
   late String _problematicOldText;
+  late int _collapsibleThreshold;
 
   @override
   void initState() {
@@ -30,6 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _problematicOldText = problematic.join('\n');
     _problematicTextController.text = _problematicOldText;
     _problematicSubtitle = _countItems(problematic);
+    _collapsibleThreshold = Settings.getConsoleEventMaxLines();
     super.initState();
   }
 
@@ -156,6 +160,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 }
             ),
+            SettingsSection(
+                title: 'Console',
+                tiles: [
+                  ListTile(
+                      title: const Text('Collapsible Console Line Threshold'),
+                      subtitle: Text(_collapsibleThreshold > 0 ? _collapsibleThreshold.toString() : 'None'),
+                      onTap: () {
+                        showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return NumberDialog(
+                                title: 'Set Limit (0 for None)',
+                                textController: _collapsibleTextController,
+                                onFieldSubmitted: (value) {
+                                  setState(() {
+                                    _collapsibleThreshold = int.parse(_collapsibleTextController.text);
+                                    Settings.setConsoleEventMaxLines(_collapsibleThreshold);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                onTapCancel: () {
+                                  _collapsibleTextController.text = _collapsibleThreshold.toString();
+                                  Navigator.pop(context);
+                                },
+                                onTapOK: () {
+                                  setState(() {
+                                    _collapsibleThreshold = int.parse(_collapsibleTextController.text);
+                                    Settings.setConsoleEventMaxLines(_collapsibleThreshold);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            }
+                        );
+                      }
+                  )
+                ]
+            )
           ])
         ))
       )
@@ -232,11 +275,11 @@ class MultilineTextDialog extends StatelessWidget {
   final VoidCallback onTapOK;
 
   const MultilineTextDialog({
+    super.key,
     required this.title,
     required this.textController,
     required this.onTapCancel,
     required this.onTapOK,
-    super.key
   });
 
   @override
@@ -260,6 +303,53 @@ class MultilineTextDialog extends StatelessWidget {
         TextButton(
           onPressed: onTapOK,
           child: const Text('OK'),
+        ),
+      ],
+    );
+  }
+}
+
+class NumberDialog extends StatelessWidget{
+  final String title;
+  final TextEditingController textController;
+  final ValueChanged<String> onFieldSubmitted;
+  final VoidCallback onTapCancel;
+  final VoidCallback onTapOK;
+
+  const NumberDialog({
+    super.key,
+    required this.title,
+    required this.textController,
+    required this.onFieldSubmitted,
+    required this.onTapCancel,
+    required this.onTapOK,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      backgroundColor: const Color(0xFF333333),
+      content: TextFormField(
+        controller: textController,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+          FilteringTextInputFormatter.digitsOnly
+        ],
+        onFieldSubmitted: onFieldSubmitted,
+        maxLines: 1,
+        autofocus: true,
+        style: const TextStyle(color: Colors.white),
+      ),
+      actions: [
+        TextButton(
+            onPressed: onTapCancel,
+            child: const Text('Cancel'),
+        ),
+        TextButton(
+            onPressed: onTapOK,
+            child: const Text('OK')
         ),
       ],
     );
