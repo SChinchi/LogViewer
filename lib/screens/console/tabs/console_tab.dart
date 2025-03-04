@@ -103,47 +103,50 @@ class _ConsolePageState extends State<ConsolePageState> {
             thumbColor: Colors.grey,
             thumbVisibility: true,
             radius: const Radius.circular(10),
-            child: ListView.builder(
-              shrinkWrap: true,
-              controller: _scrollController,
-              itemCount: _loggedEvents.length,
-              itemBuilder: (context, index) {
-                final event = _loggedEvents[index];
-                return Stack(
-                  children: [
-                    Card(
-                      child: GestureDetector(
-                        child: _ExpandableContainer(event: event),
-                        onLongPressDown: (detail) {
-                          _tapEventOffset = detail.globalPosition;
-                        },
-                        onSecondaryTapDown: (detail) {
-                          _tapEventOffset = detail.globalPosition;
-                        },
-                        onLongPress: () {
-                          if (_isMobile()) {
-                            _showDialog(context, event.fullString);
-                          }
-                        },
-                        onSecondaryTap: () {
-                          if (!_isMobile()) {
-                            _showDialog(context, event.fullString);
-                          }
-                        },
-                      ),
-                    ),
-                    if (event.repeat > 0)
-                      Positioned(
-                        bottom: 5,
-                        right: 5,
-                        child: Text(
-                          event.repeat.toString(),
-                          style: TextStyle(fontSize: 12, color: Colors.orange[800]),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: ListView.builder(
+                shrinkWrap: true,
+                controller: _scrollController,
+                itemCount: _loggedEvents.length,
+                itemBuilder: (context, index) {
+                  final event = _loggedEvents[index];
+                  return Stack(
+                    children: [
+                      Card(
+                        child: GestureDetector(
+                          child: _ExpandableContainer(event: event),
+                          onLongPressDown: (detail) {
+                            _tapEventOffset = detail.globalPosition;
+                          },
+                          onSecondaryTapDown: (detail) {
+                            _tapEventOffset = detail.globalPosition;
+                          },
+                          onLongPress: () {
+                            if (_isMobile()) {
+                              _showDialog(context, event.fullString);
+                            }
+                          },
+                          onSecondaryTap: () {
+                            if (!_isMobile()) {
+                              _showDialog(context, event.fullString);
+                            }
+                          },
                         ),
                       ),
-                  ],
-                );
-              },
+                      if (event.repeat > 0)
+                        Positioned(
+                          bottom: 5,
+                          right: 30,
+                          child: Text(
+                            event.repeat.toString(),
+                            style: TextStyle(fontSize: 12, color: Colors.orange[800]),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
