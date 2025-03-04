@@ -9,14 +9,11 @@ class SummaryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black,
-      child: ListView.builder(
-        itemCount: Logger.summary.length,
-        itemBuilder: (context, index) {
-          return Text(Logger.summary[index], style: const TextStyle(color: Colors.white));
-        }
-      )
+    return ListView.builder(
+      itemCount: Logger.summary.length,
+      itemBuilder: (context, index) {
+        return Text(Logger.summary[index]);
+      },
     );
   }
 }

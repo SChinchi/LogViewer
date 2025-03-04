@@ -16,7 +16,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    var data = <ExpandableList>[];
+    final data = <ExpandableList>[];
     if (Diagnostics.dependencyIssues.isNotEmpty) {
       data.add(ExpandableList(heading: 'Missing Dependencies & Incompatibilities', items: Diagnostics.dependencyIssues));
     }
@@ -33,26 +33,24 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> with SingleTickerProv
       data.add(ExpandableList(heading: 'Most Spammed Errors', items: Diagnostics.mostCommonRecurrentErrors));
     }
     return Scaffold(
-      backgroundColor: Colors.black,
       body: ListView.builder(
         itemBuilder: (BuildContext context, int index) {
           return ExpansionTile(
             backgroundColor: Colors.white10,
-            title: Text(data[index].heading, style: const TextStyle(color: Colors.white)),
-            children: data[index].items.map((item) => ListTile(
-                title: SelectableText(item.text, style: TextStyle(color: item.color))
-            )).toList()
+            title: Text(data[index].heading),
+            children: data[index].items.map((item) =>
+                ListTile(title: SelectableText(item.text, style: TextStyle(color: item.color)))).toList(),
           );
         },
-        itemCount: data.length
+        itemCount: data.length,
       ),
     );
   }
 }
 
 class ExpandableList {
-  String heading;
-  List<ListItem> items;
+  final String heading;
+  final List<ListItem> items;
 
   ExpandableList({required this.heading, required this.items});
 }

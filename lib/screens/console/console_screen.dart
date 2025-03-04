@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants.dart';
 import '../../providers/mod_manager.dart';
+import '../../themes/themes.dart';
 import '../settings_screen.dart';
 import 'tabs/summary_tab.dart';
 import 'tabs/modlist_tab.dart';
@@ -13,7 +14,6 @@ import 'tabs/console_tab.dart';
 import 'tabs/diagnostics_tabs.dart';
 
 class ConsoleScreen extends StatelessWidget {
-
   const ConsoleScreen({super.key});
 
   @override
@@ -52,88 +52,82 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
   Widget build(BuildContext context) {
     final isInSelectionMode = context.select((ModManager m) => m.isInSelectionMode);
     return Scaffold(
-        appBar: AppBar(
-            toolbarHeight: 30,
-            backgroundColor: Colors.black,
-            iconTheme: const IconThemeData(color: Colors.white),
-            actions: [
-              if (isInSelectionMode && tabController.index == 1)
-                ...[
-                  IconButton(
-                    icon: const Icon(
-                        Icons.cancel,
-                        color: Colors.white
-                    ),
-                    onPressed: () {
-                      Logger.modManager.clearSelections();
-                    }
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.copy,
-                      color: Colors.white,
-                    ),
-                    onPressed: () async {
-                      var text = Logger.modManager.mods.where((m) => m.isSelected).map((m) => m.guid);
-                      await Clipboard.setData(ClipboardData(text: text.join('\n')));
-                      Logger.modManager.clearSelections();
-                    },
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: ((value) =>
-                    {
-                      if (value == Constants.selectionOptions[0]) {
-                        Settings.setDeprecatedAndOldWhitelist(_addTo(Settings.getDeprecatedAndOldWhitelist()))
-                      }
-                      else if (value == Constants.selectionOptions[1]) {
-                        Settings.setDeprecatedAndOldWhitelist(_removeFrom(Settings.getDeprecatedAndOldWhitelist()))
-                      }
-                      else if (value == Constants.selectionOptions[2]) {
-                        Settings.setProblematicModlist(_addTo(Settings.getProblematicModlist()))
-                      }
-                      else {
-                        Settings.setProblematicModlist(_removeFrom(Settings.getProblematicModlist()))
-                      },
-                      Logger.modManager.clearSelections()
-                    }),
-                    itemBuilder: (BuildContext context) {
-                      return Constants.selectionOptions.map((String choice) {
-                        return PopupMenuItem<String>(value: choice, child: Text(choice));
-                      }).toList();
-                    },
-                  ),
-                ]
-              else
-                PopupMenuButton<String>(
-                  onSelected: ((value) =>
-                  {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()))
-                  }),
-                  itemBuilder: (BuildContext context) {
-                    return Constants.menuOptions.map((String choice) {
-                      return PopupMenuItem<String>(value: choice, child: Text(choice));
-                    }).toList();
-                  },
-                )
-            ],
-            bottom: TabBar(
-                controller: tabController,
-                labelColor: Colors.white,
-                indicator: const UnderlineTabIndicator(borderSide: BorderSide(color: Colors.white, width: 2.0)),
-                tabs: const [
-                  Tab(text: Constants.titleTab_1),
-                  Tab(text: Constants.titleTab_2),
-                  Tab(text: Constants.titleTab_3),
-                  Tab(text: Constants.titleTab_4),
-                ]
+      appBar: AppBar(
+        toolbarHeight: 35,
+        actions: [
+          if (isInSelectionMode && tabController.index == 1)
+            ...[
+              IconButton(
+                icon: const Icon(Icons.cancel),
+                onPressed: () {
+                  Logger.modManager.clearSelections();
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy),
+                onPressed: () async {
+                  var text = Logger.modManager.mods.where((m) => m.isSelected).map((m) => m.guid);
+                  await Clipboard.setData(ClipboardData(text: text.join('\n')));
+                  Logger.modManager.clearSelections();
+                },
+              ),
+              PopupMenuButton(
+                shadowColor: AppTheme.primaryColor,
+                onSelected: ((value) {
+                  if (value == Constants.selectionOptions[0]) {
+                    Settings.setDeprecatedAndOldWhitelist(_addTo(Settings.getDeprecatedAndOldWhitelist()));
+                  }
+                  else if (value == Constants.selectionOptions[1]) {
+                    Settings.setDeprecatedAndOldWhitelist(_removeFrom(Settings.getDeprecatedAndOldWhitelist()));
+                  }
+                  else if (value == Constants.selectionOptions[2]) {
+                    Settings.setProblematicModlist(_addTo(Settings.getProblematicModlist()));
+                  }
+                  else {
+                    Settings.setProblematicModlist(_removeFrom(Settings.getProblematicModlist()));
+                  }
+                  Logger.modManager.clearSelections();
+                }),
+                itemBuilder: (BuildContext context) {
+                  return Constants.selectionOptions.map((String choice) {
+                    return PopupMenuItem<String>(value: choice, child: Text(choice));
+                  }).toList();
+                },
+              ),
+            ]
+          else
+            PopupMenuButton(
+              menuPadding: EdgeInsets.zero,
+              shadowColor: AppTheme.primaryColor,
+              onSelected: ((value) {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+              }),
+              itemBuilder: (BuildContext context) {
+                return Constants.menuOptions.map((String choice) {
+                  return PopupMenuItem(value: choice, child: Text(choice));
+                }).toList();
+              },
             )
+        ],
+        bottom: TabBar(
+          controller: tabController,
+          tabs: const [
+            Tab(text: Constants.titleTab_1),
+            Tab(text: Constants.titleTab_2),
+            Tab(text: Constants.titleTab_3),
+            Tab(text: Constants.titleTab_4),
+          ],
         ),
-        body: TabBarView(controller: tabController, children: [
+      ),
+      body: TabBarView(
+        controller: tabController,
+        children: [
           SummaryPage(tabController: tabController),
           ModListPage(tabController: tabController),
           ConsolePage(tabController: tabController),
           DiagnosticsPage(tabController: tabController),
-        ])
+        ],
+      ),
     );
   }
 

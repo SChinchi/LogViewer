@@ -11,12 +11,13 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/main.dart';
+import 'package:log_viewer/themes/themes.dart';
 import 'console/console_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.title});
-
   final String title;
+
+  const HomeScreen({super.key, required this.title});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -39,36 +40,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    var size = MediaQuery.of(context).size;
-    return Scaffold(
-      appBar: AppBar(
+    final size = MediaQuery.of(context).size;
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.theme,
+      home: Scaffold(
+        appBar: AppBar(
           title: const Text(Constants.appTitle,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold
-              )
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-        backgroundColor: Colors.black,
-      ),
-      backgroundColor: Colors.white10,
-      body: Column(
-        children: [
-          SafeArea(child: Padding(
-              padding: const EdgeInsets.all(16.0).copyWith(top: 50),
-              child: Container(
-                width: min(size.width * .8, 700),
-                height: min(size.height * .5, 500),
-                decoration: BoxDecoration(
-                  color: Colors.grey[700],
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(14),
+        ),
+        body: Column(
+          children: [
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0).copyWith(top: 50),
+                child: Container(
+                  width: min(size.width * .8, 700),
+                  height: min(size.height * .5, 500),
+                  decoration: BoxDecoration(
+                    color: AppTheme.selectedColor,
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: _DropZone(),
                 ),
-                child: _DropZone()
-              )
-          )),
-          Center(child: _FilePicker())
-        ],
-      )
+              ),
+            ),
+            Center(child: _FilePicker()),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -84,6 +86,7 @@ class _FilePickerState extends State<_FilePicker>{
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
+      style: ElevatedButton.styleFrom(shadowColor: Colors.white),
       onPressed: () async {
         result = await FilePicker.platform.pickFiles(allowMultiple: false);
         if (result != null) {
@@ -128,7 +131,7 @@ class _DropZoneState extends State<_DropZone> {
                 child: _preview,
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -138,10 +141,11 @@ class _DropZoneState extends State<_DropZone> {
     setState(() {
       _isDragOver = true;
       _preview = Container(
-          decoration: BoxDecoration(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(13),
-      color: Colors.black.withValues(alpha: 0.2),
-      ));
+          color: Colors.black.withValues(alpha: 0.2),
+        ),
+      );
     });
     return event.session.allowedOperations.firstOrNull ?? DropOperation.none;
   }
@@ -180,16 +184,13 @@ class _DropZoneState extends State<_DropZone> {
 Widget _preview = const SizedBox();
 
 Widget _upload = const Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(Icons.upload_file, size: 48),
-      Text(Constants.dropText,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-        ),
-      )
-    ]
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Icon(Icons.upload_file, size: 48),
+    Text(Constants.dropText,
+      style: TextStyle(fontSize: 16),
+    ),
+  ],
 );
 
 void _tryNavigate(BuildContext context, List<String>? fileLines) {

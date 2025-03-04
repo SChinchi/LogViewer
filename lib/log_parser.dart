@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:log_viewer/settings.dart';
+import 'package:log_viewer/themes/themes.dart';
 
 import 'constants.dart';
 import 'database.dart';
@@ -41,7 +42,7 @@ class Event {
       color = Colors.yellow;
     }
     else {
-      color = Colors.white;
+      color = AppTheme.primaryColor;
     }
     lineCount = fullString.split('\n').length;
     var modPattern = RegExp(r'^TS Manifest: (.*)').firstMatch(match.group(4)!);
