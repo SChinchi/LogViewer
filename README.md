@@ -19,6 +19,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
     - `exclude:term` or `exclude:(term|another|and with spaces)` filters events that contain any of the specified keywords. 
     - `repeat:N` filters for events that are repeated at least N times in a row.
     - `range:start..end` filters for event indices. If either value is omitted, a default is used. Negative numbers count from the end of the list, e.g., `range:-5..` is the last 5 events.
+  - Right click to copy selected event to clipboard. Long messages can be copied as a file instead. Configurable. 
 - A diagnostics tab that collects various issues that may highlight why a profile leads to errors.
   - **Missing Dependencies & Incompatibilities**: for mods failing to load due to dependency issues.
   - **Mods Crashing On Awake**: errors with `BepInEx.Bootstrap.Chainloader:Start()`. Incomplete mod loading may lead to issues for other mods.
@@ -30,6 +31,8 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 
 - Main screen
   - Add loading progress bar for big files. Optimisation might also be possible when parsing the log.
+- Console
+  - Fix copy to file on Android. 
 - Diagnostics
   - Capture mods that corrupt code with bad IL.
 

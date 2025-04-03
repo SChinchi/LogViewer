@@ -18,11 +18,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _whitelistTextController = TextEditingController();
   final _problematicTextController = TextEditingController();
   final _collapsibleTextController = TextEditingController();
+  final _textSizeThresholdTextController = TextEditingController();
   late String _whitelistOldText;
   late String _whitelistSubtitle;
   late String _problematicSubtitle;
   late String _problematicOldText;
   late int _collapsibleThreshold;
+  late int _textSizeThreshold;
 
   @override
   void initState() {
@@ -35,6 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _problematicTextController.text = _problematicOldText;
     _problematicSubtitle = _countItems(problematic);
     _collapsibleThreshold = Settings.getConsoleEventMaxLines();
+    _textSizeThreshold = Settings.getTextSizeCopyThreshold();
     super.initState();
   }
 
@@ -195,6 +198,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             },
                           );
                         },
+                      ),
+                      ListTile(
+                        title: const Text('Copy To File If Text Longer Than'),
+                        subtitle: Text(_textSizeThreshold > 0 ? _textSizeThreshold.toString() : 'None'),
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return NumberDialog(
+                                title: 'Set Threshold (0 for None)',
+                                textController: _textSizeThresholdTextController,
+                                onFieldSubmitted: (value) {
+                                  setState(() {
+                                    _textSizeThreshold = int.parse(_textSizeThresholdTextController.text);
+                                    Settings.setTextSizeCopyThreshold(_textSizeThreshold);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                onTapCancel: () {
+                                  _textSizeThresholdTextController.text = _textSizeThreshold.toString();
+                                  Navigator.pop(context);
+                                },
+                                onTapOK: () {
+                                  setState(() {
+                                    _textSizeThreshold = int.parse(_textSizeThresholdTextController.text);
+                                    Settings.setTextSizeCopyThreshold(_textSizeThreshold);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          );
+                        }
                       ),
                     ],
                   ),

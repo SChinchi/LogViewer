@@ -5,6 +5,12 @@
         android:label="Log Viewer"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <provider
+            android:name="com.superlist.super_native_extensions.DataProvider"
+            android:authorities="com.chinchi.log_viewer.SuperClipboardDataProvider"
+            android:exported="true"
+            android:grantUriPermissions="true" >
+        </provider>
         <activity
             android:name=".MainActivity"
             android:exported="true"

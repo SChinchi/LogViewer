@@ -1,13 +1,17 @@
-import 'dart:io' show Platform;
+import 'dart:io' show File, FileMode, Platform;
 
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as path;
 
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/themes/themes.dart';
+
+import 'package:path_provider/path_provider.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 
 class ConsolePage extends StatelessWidget {
   final TabController tabController;
@@ -168,7 +172,21 @@ class _ConsolePageState extends State<ConsolePageState> {
         PopupMenuItem(
           child: const Text("Copy"),
           onTap: () async {
-            await Clipboard.setData(ClipboardData(text: text));
+            final size = Settings.getTextSizeCopyThreshold();
+            if (size <= 0 || text.length < size) {
+              await Clipboard.setData(ClipboardData(text: text));
+              return;
+            }
+            final clipboard = SystemClipboard.instance;
+            if (clipboard == null) {
+              return;
+            }
+            final tempDir = await getTemporaryDirectory();
+            final file = File(path.join(tempDir.path, Constants.tempCopyFilename));
+            await file.writeAsString(text, mode: FileMode.writeOnly);
+            final item = DataWriterItem();
+            item.add(Formats.fileUri(file.uri));
+            await clipboard.write([item]);
           },
         ),
       ],

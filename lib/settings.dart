@@ -8,6 +8,7 @@ class Settings {
   static const KEY_DEPRECATED_AND_OLD_WHITELIST = 'deprecated_and_old_whitelist';
   static const KEY_PROBLEMATIC_MODLIST = 'problematic_modlist';
   static const KEY_CONSOLE_EVENT_MAX_LINES = 'console_event_max_lines';
+  static const KEY_TEXT_SIZE_COPY_THRESHOLD = 'text_size_copy_threshold';
 
   static late SharedPreferencesWithCache _prefs;
   static late bool _useCutOffDate;
@@ -15,6 +16,7 @@ class Settings {
   static late List<String> _deprecatedAndOldWhitelist;
   static late List<String> _problematicModlist;
   static late int _consoleEventMaxLines;
+  static late int _textSizeCopyThreshold;
 
   static init() async {
     _prefs = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
@@ -23,6 +25,7 @@ class Settings {
     _deprecatedAndOldWhitelist = _prefs.getStringList(KEY_DEPRECATED_AND_OLD_WHITELIST) ?? [];
     _problematicModlist = _prefs.getStringList(KEY_PROBLEMATIC_MODLIST) ?? [];
     _consoleEventMaxLines = _prefs.getInt(KEY_CONSOLE_EVENT_MAX_LINES) ?? 7;
+    _textSizeCopyThreshold = _prefs.getInt(KEY_TEXT_SIZE_COPY_THRESHOLD) ?? 2000;
   }
 
   static setUseCutOffDate(bool value) async {
@@ -80,4 +83,14 @@ class Settings {
   }
 
   static int getConsoleEventMaxLines() => _consoleEventMaxLines;
+
+  static setTextSizeCopyThreshold(int value) async {
+    if (value < 0) {
+      value = 0;
+    }
+    _textSizeCopyThreshold = value;
+    await _prefs.setInt(KEY_TEXT_SIZE_COPY_THRESHOLD, value);
+  }
+
+  static int getTextSizeCopyThreshold() => _textSizeCopyThreshold;
 }
