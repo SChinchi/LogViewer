@@ -45,7 +45,7 @@ class Event {
       color = AppTheme.primaryColor;
     }
     lineCount = fullString.split('\n').length;
-    var modPattern = RegExp(r'^TS Manifest: (.*)').firstMatch(match.group(4)!);
+    final modPattern = RegExp(r'^TS Manifest: (.*)').firstMatch(match.group(4)!);
     if (modPattern != null) {
       modName = modPattern.group(1);
     }
@@ -72,21 +72,21 @@ class Logger
   static var _eventStart = startIndex;
   static var _eventEnd = endIndex;
   static var _repeatThreshold = 0;
-  static var filteredEvents = <Event>[];
+  static final filteredEvents = <Event>[];
   static late Future modStatusNetRequest;
 
   static void _addEvent(String s) {
-    var match = _eventPattern.firstMatch(s);
+    final match = _eventPattern.firstMatch(s);
     if (match == null) {
       return;
     }
     // Compress repeated messages for the console
-    var sNoPrefix = s.substring(match.group(1)!.length);
+    final sNoPrefix = s.substring(match.group(1)!.length);
     if (events.isNotEmpty && events.last.fullStringNoPrefix == sNoPrefix) {
       events.last.repeat++;
       return;
     }
-    var event = Event(s, match);
+    final event = Event(s, match);
     event.index = events.length;
     events.add(event);
     if (_passesFilter(event)) {
@@ -107,9 +107,9 @@ class Logger
 
   static void _recalculateFilteredEvents() {
     filteredEvents.clear();
-    var start = _eventStart;
-    var end = max(_eventStart, events.length+_eventEnd);
-    for (var e in events.sublist(start, end)) {
+    final start = _eventStart;
+    final end = max(_eventStart, events.length+_eventEnd);
+    for (final e in events.sublist(start, end)) {
       if (_passesFilter(e)) {
         filteredEvents.add(e);
       }
@@ -134,9 +134,9 @@ class Logger
   {
     _reset();
     try {
-      var sb = StringBuffer(lines[0]);
-      for (var line in lines.sublist(1, lines.length)) {
-        var match = _eventPattern.firstMatch(line);
+      final sb = StringBuffer(lines[0]);
+      for (final line in lines.sublist(1, lines.length)) {
+        final match = _eventPattern.firstMatch(line);
         if (match != null) {
           _addEvent(sb.toString().trimRight());
           sb.clear();
@@ -147,23 +147,30 @@ class Logger
         _addEvent(sb.toString().trimRight());
       }
       // Prefix each message with its index; useful for range searching
-      var total = events.length;
-      var length = total.toString().length;
-      for (var event in events) {
+      final total = events.length;
+      final length = total.toString().length;
+      for (final event in events) {
         event.fullString = '${event.index.toString().padLeft(length, '0')} ${event.fullString}';
       }
 
-      var bepInExLine = RegExp(r'^BepInEx \d+\.\d+\.\d+.\d+');
-      var unityLine = RegExp(r'^Running under Unity');
-      var patcherLine = RegExp(r'^Loaded \d+ patcher method from \[.*\]');
-      var lastSummaryLine = RegExp(r'^\d+ plugins to load$');
-      for (var event in events) {
-        var isLastSummaryLine = lastSummaryLine.firstMatch(event.string) != null;
+      final bepInExLine = RegExp(r'^BepInEx \d+\.\d+\.\d+.\d+');
+      final unityLine = RegExp(r'^Running under Unity');
+      final patcherLine = RegExp(r'^Loaded \d+ patcher method from \[.*\]');
+      final pluginsLine = RegExp(r'^\d+ plugins to load$');
+      final lastSummaryLine = RegExp(r'^WwiseUnity: Setting Plugin DLL path to');
+      for (final event in events) {
+        final isLastSummaryLine = lastSummaryLine.firstMatch(event.string) != null;
         if (isLastSummaryLine ||
             bepInExLine.firstMatch(event.string) != null ||
             unityLine.firstMatch(event.string) != null ||
-            patcherLine.firstMatch(event.string) != null) {
-          summary.add(event.string);
+            patcherLine.firstMatch(event.string) != null ||
+            pluginsLine.firstMatch(event.string) != null) {
+          if (!event.string.contains(lastSummaryLine) ||
+              // Checking if the installed path is illegitimate to add it to the summary.
+              // Epic Games does allow any directory path so some rare false positives are expected.
+              (!event.string.contains('/steamapps/common/Risk') && !event.string.contains('/Epic Games/Risk'))) {
+            summary.add(event.string);
+          }
         }
         if (isLastSummaryLine) {
           break;
@@ -272,16 +279,16 @@ class Logger
 
   static Future getAllModsStatus() async {
     await DB.init();
-    var query = await DB.allMods();
-    var toUpdate = <String>{};
-    var now = DateTime.now();
-    var cutOffDate = Settings.getCutOffDate();
-    var deprecatedAndOldWhitelist = Settings.getDeprecatedAndOldWhitelist();
-    var problematicModlist = Settings.getProblematicModlist();
-    for (var mod in Logger.modManager.mods) {
-      var entry = query[mod.fullName];
+    final query = await DB.allMods();
+    final toUpdate = <String>{};
+    final now = DateTime.now();
+    final cutOffDate = Settings.getCutOffDate();
+    final deprecatedAndOldWhitelist = Settings.getDeprecatedAndOldWhitelist();
+    final problematicModlist = Settings.getProblematicModlist();
+    for (final mod in Logger.modManager.mods) {
+      final entry = query[mod.fullName];
       if (entry != null) {
-        var whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+        final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
         mod.isDeprecated = !whitelisted && entry.isDeprecated == 1;
         mod.isOld = !whitelisted
             && cutOffDate != null
@@ -306,13 +313,13 @@ class Logger
     return Future(() => {
       http.get(Uri.parse('https://thunderstore.io/api/v1/package/')).then((response) {
         if (response.statusCode == 200) {
-          var body = jsonDecode(response.body) as List;
-          for (var tsMod in body) {
-            var fullName = tsMod['full_name'];
+          final body = jsonDecode(response.body) as List;
+          for (final tsMod in body) {
+            final fullName = tsMod['full_name'];
             if (toUpdate.contains(fullName)) {
-              var mod = Logger.modManager.getMod(fullName);
+              final mod = Logger.modManager.getMod(fullName);
               if (mod != null) {
-                var whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+                final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
                 mod.isDeprecated = !whitelisted && tsMod['is_deprecated'];
                 mod.isOld = !whitelisted
                     && cutOffDate != null
@@ -322,7 +329,7 @@ class Logger
                         .isNegative
                     && !mod.isDeprecated;
                 mod.isProblematic = problematicModlist.contains(fullName);
-                var entry = Entry(
+                final entry = Entry(
                   fullName: fullName,
                   dateTs: tsMod['date_updated'],
                   dateDb: now.toIso8601String(),
@@ -368,15 +375,15 @@ class Diagnostics {
 
   static analyse() {
     _reset();
-    var missingDependency = RegExp(r'^Could not load \[.*\] because it has missing dependencies:');
-    var incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');
-    var chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start\(\)');
-    var missingPattern = RegExp('^Missing(Field|Method)Exception');
-    var stuckLoadingPattern = RegExp(r'UnityEngine.SetupCoroutine.InvokeMoveNext');
-    var encounteredExceptions = <String>{};
-    var encounteredCommonErrors = <String>{};
+    final missingDependency = RegExp(r'^Could not load \[.*\] because it has missing dependencies:');
+    final incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');
+    final chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start\(\)');
+    final missingPattern = RegExp('^Missing(Field|Method)Exception');
+    final stuckLoadingPattern = RegExp(r'UnityEngine.SetupCoroutine.InvokeMoveNext');
+    final encounteredExceptions = <String>{};
+    final encounteredCommonErrors = <String>{};
     var currentMod = '';
-    for (var e in Logger.events) {
+    for (final e in Logger.events) {
       if (e.modName != null) {
         currentMod = e.modName!;
       }
