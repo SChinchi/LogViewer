@@ -372,7 +372,7 @@ class Diagnostics {
     var incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');
     var chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start\(\)');
     var missingPattern = RegExp('^Missing(Field|Method)Exception');
-    var stuckLoadingPattern = RegExp(r'RoR2\.RoR2Application\+<LoadGameContent>d__\d+\.MoveNext \(\)');
+    var stuckLoadingPattern = RegExp(r'UnityEngine.SetupCoroutine.InvokeMoveNext');
     var encounteredExceptions = <String>{};
     var encounteredCommonErrors = <String>{};
     var currentMod = '';
