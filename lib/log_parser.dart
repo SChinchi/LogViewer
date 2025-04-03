@@ -361,6 +361,7 @@ class ListItem {
 class Diagnostics {
   static List<ListItem> dependencyIssues = [];
   static List<ListItem> modsCrashingOnAwake = [];
+  static List<ListItem> hookFails = [];
   static List<ListItem> stuckLoading = [];
   static List<ListItem> missingMemberExceptions = [];
   static List<ListItem> mostCommonRecurrentErrors = [];
@@ -368,6 +369,7 @@ class Diagnostics {
   static _reset() {
     dependencyIssues.clear();
     modsCrashingOnAwake.clear();
+    hookFails.clear();
     stuckLoading.clear();
     missingMemberExceptions.clear();
     mostCommonRecurrentErrors.clear();
@@ -378,8 +380,9 @@ class Diagnostics {
     final missingDependency = RegExp(r'^Could not load \[.*\] because it has missing dependencies:');
     final incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');
     final chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start\(\)');
-    final missingPattern = RegExp('^Missing(Field|Method)Exception');
     final stuckLoadingPattern = RegExp(r'UnityEngine.SetupCoroutine.InvokeMoveNext');
+    final flawedHookPattern = RegExp(r'(MonoMod\.RuntimeDetour\.(IL)?Hook\.\.ctor|HarmonyLib\.PatchClassProcessor\.Patch)');
+    final missingPattern = RegExp(r'^Missing(Field|Method)Exception');
     final encounteredExceptions = <String>{};
     final encounteredCommonErrors = <String>{};
     var currentMod = '';
@@ -390,6 +393,15 @@ class Diagnostics {
       if (missingDependency.firstMatch(e.string) != null || incompatibleDependency.firstMatch(e.string) != null) {
         dependencyIssues.add(ListItem(text: e.fullString, color: e.color));
       }
+      if (chainLoaderPattern.firstMatch(e.fullString) != null) {
+        modsCrashingOnAwake.add(ListItem(text: '$currentMod\n${e.fullString}', color: e.color));
+      }
+      if (stuckLoadingPattern.firstMatch(e.fullString) != null) {
+        stuckLoading.add(ListItem(text: e.fullString, color: e.color));
+      }
+      if (flawedHookPattern.firstMatch(e.fullString) != null) {
+        hookFails.add(ListItem(text: e.fullString, color: e.color));
+      }
       if (missingPattern.firstMatch(e.string) != null && !encounteredExceptions.contains(e.fullStringNoPrefix)) {
         missingMemberExceptions.add(ListItem(text: e.fullString, color: e.color));
         encounteredExceptions.add(e.fullStringNoPrefix);
@@ -397,12 +409,6 @@ class Diagnostics {
       if (e.repeat > 0 && e.severity < 2 && !encounteredCommonErrors.contains(e.fullStringNoPrefix)) {
         mostCommonRecurrentErrors.add(ListItem(text: e.fullString, color: e.color, repeat: e.repeat));
         encounteredCommonErrors.add(e.fullStringNoPrefix);
-      }
-      if (chainLoaderPattern.firstMatch(e.fullString) != null) {
-        modsCrashingOnAwake.add(ListItem(text: '$currentMod\n${e.fullString}', color: e.color));
-      }
-      if (stuckLoadingPattern.firstMatch(e.fullString) != null) {
-        stuckLoading.add(ListItem(text: e.fullString, color: e.color));
       }
     }
     mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat!.compareTo(event1.repeat!));

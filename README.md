@@ -23,6 +23,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 - A diagnostics tab that collects various issues that may highlight why a profile leads to errors.
   - **Missing Dependencies & Incompatibilities**: for mods failing to load due to dependency issues.
   - **Mods Crashing On Awake**: errors with `BepInEx.Bootstrap.Chainloader:Start()`. Incomplete mod loading may lead to issues for other mods.
+  - **Flawed Code Modifications**: errors about MMHOOK and Harmony patches. Signals broken mods or corrupted code state.
   - **Stuck Loading x%**: for errors that cause the game to hang on the loading screen. 
   - **Missing Member Exception**: for outdated mods that attempt to call missing code.
   - **Most Repeated Errors**: events logged multiple times consecutively (most likely errors) sorted in descending order.
@@ -32,9 +33,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 - Main screen
   - Add loading progress bar for big files. Optimisation might also be possible when parsing the log.
 - Console
-  - Fix copy to file on Android. 
-- Diagnostics
-  - Capture mods that corrupt code with bad IL.
+  - Fix copy to file on Android.
 
 ## How to build
 

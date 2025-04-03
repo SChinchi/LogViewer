@@ -23,7 +23,10 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> with SingleTickerProv
     if (Diagnostics.modsCrashingOnAwake.isNotEmpty) {
       data.add(ExpandableList(heading: 'Mods Crashing On Awake', items: Diagnostics.modsCrashingOnAwake));
     }
-    if (Diagnostics.stuckLoading.isNotEmpty) {
+    if (Diagnostics.hookFails.isNotEmpty) {
+      data.add(ExpandableList(heading: 'Flawed Code Modifications', items: Diagnostics.hookFails));
+    }
+      if (Diagnostics.stuckLoading.isNotEmpty) {
       data.add(ExpandableList(heading: 'Stuck Loading x%', items: Diagnostics.stuckLoading));
     }
     if (Diagnostics.missingMemberExceptions.isNotEmpty) {
