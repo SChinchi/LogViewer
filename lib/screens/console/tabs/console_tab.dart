@@ -33,7 +33,7 @@ class ConsolePageState extends StatefulWidget {
 
 class _ConsolePageState extends State<ConsolePageState> {
   var _currentSliderValue = Logger.getSeverity().toDouble();
-  var _status = Constants.logSeverity.last;
+  var _status = Constants.logSeverity[Logger.getSeverity()];
   var _loggedEvents = Logger.filteredEvents;
   final _scrollController = ScrollController();
   final _textController = TextEditingController(text: Logger.getSearchString());
