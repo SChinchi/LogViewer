@@ -9,6 +9,7 @@ import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/themes/themes.dart';
+import 'package:log_viewer/utils.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:super_clipboard/super_clipboard.dart';
@@ -101,57 +102,58 @@ class _ConsolePageState extends State<ConsolePageState> {
           ),
         ),
         Expanded(
-          child: RawScrollbar(
-            controller: _scrollController,
-            thickness: 12,
-            thumbColor: Colors.grey,
-            thumbVisibility: true,
-            radius: const Radius.circular(10),
-            child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-              child: ListView.builder(
-                shrinkWrap: true,
-                controller: _scrollController,
-                itemCount: _loggedEvents.length,
-                itemBuilder: (context, index) {
-                  final event = _loggedEvents[index];
-                  return Stack(
-                    children: [
-                      Card(
-                        child: GestureDetector(
-                          child: _ExpandableContainer(event: event),
-                          onLongPressDown: (detail) {
-                            _tapEventOffset = detail.globalPosition;
-                          },
-                          onSecondaryTapDown: (detail) {
-                            _tapEventOffset = detail.globalPosition;
-                          },
-                          onLongPress: () {
-                            if (_isMobile()) {
-                              _showDialog(context, event.fullString);
-                            }
-                          },
-                          onSecondaryTap: () {
-                            if (!_isMobile()) {
-                              _showDialog(context, event.fullString);
-                            }
-                          },
-                        ),
-                      ),
-                      if (event.repeat > 0)
-                        Positioned(
-                          bottom: 5,
-                          right: 30,
-                          child: Text(
-                            event.repeat.toString(),
-                            style: TextStyle(fontSize: 12, color: Colors.orange[800]),
+          child: addMiddleScrollFunctionality(
+            Scrollbar(
+              controller: _scrollController,
+              thumbVisibility: true,
+              interactive: true,
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  controller: _scrollController,
+                  itemCount: _loggedEvents.length,
+                  itemBuilder: (context, index) {
+                    final event = _loggedEvents[index];
+                    return Stack(
+                      children: [
+                        Card(
+                          child: GestureDetector(
+                            child: _ExpandableContainer(event: event),
+                            onLongPressDown: (detail) {
+                              _tapEventOffset = detail.globalPosition;
+                            },
+                            onSecondaryTapDown: (detail) {
+                              _tapEventOffset = detail.globalPosition;
+                            },
+                            onLongPress: () {
+                              if (_isMobile()) {
+                                _showDialog(context, event.fullString);
+                              }
+                            },
+                            onSecondaryTap: () {
+                              if (!_isMobile()) {
+                                _showDialog(context, event.fullString);
+                              }
+                            },
                           ),
                         ),
-                    ],
-                  );
-                },
+                        if (event.repeat > 0)
+                          Positioned(
+                            bottom: 5,
+                            right: 30,
+                            child: Text(
+                              event.repeat.toString(),
+                              style: TextStyle(fontSize: 12, color: Colors.orange[800]),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
+            _scrollController,
           ),
         ),
       ],

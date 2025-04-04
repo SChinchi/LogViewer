@@ -8,6 +8,7 @@ import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/themes/themes.dart';
+import 'package:log_viewer/utils.dart';
 
 class ModListPage extends StatelessWidget {
   final TabController tabController;
@@ -34,6 +35,7 @@ class ModListPageState extends StatefulWidget {
 
 class _ModListPageState extends State<ModListPageState> {
   final _textController = TextEditingController(text: Logger.modManager.searchString);
+  final _scrollController = ScrollController();
 
   @override
   Widget build(BuildContext context) {
@@ -90,38 +92,50 @@ class _ModListPageState extends State<ModListPageState> {
           child: Stack(
             alignment: Alignment.bottomRight,
             children: [
-              ListView.builder(
-                itemCount: mods.length,
-                itemBuilder: (context, index) {
-                  final mod = mods[index];
-                  return GestureDetector(
-                    child: Text(
-                      mod.guid,
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        color: mod.isDeprecated ? Colors.red
-                            : mod.isOld ? Colors.grey
-                            : mod.isProblematic ? Colors.yellow
-                            : AppTheme.primaryColor, //.white,
-                        backgroundColor: mod.isSelected ? AppTheme.selectedColor
-                            : AppTheme.secondaryColor, //Colors.black
-                      ),
+              addMiddleScrollFunctionality(
+                Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  interactive: true,
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: mods.length,
+                      itemBuilder: (context, index) {
+                        final mod = mods[index];
+                        return GestureDetector(
+                          child: Text(
+                            mod.guid,
+                            textAlign: TextAlign.left,
+                            style: TextStyle(
+                              color: mod.isDeprecated ? Colors.red
+                                  : mod.isOld ? Colors.grey
+                                  : mod.isProblematic ? Colors.yellow
+                                  : AppTheme.primaryColor,
+                              backgroundColor: mod.isSelected ? AppTheme.selectedColor
+                                  : AppTheme.secondaryColor,
+                            ),
+                          ),
+                          onLongPress: () {
+                            if (!Logger.modManager.isInSelectionMode) {
+                              Logger.modManager.toggleSelected(mod);
+                            }
+                          },
+                          onTap: () {
+                            if (Logger.modManager.isInSelectionMode) {
+                              // Need to trigger a state update because [isInSelectionMode] doesn't change
+                              setState(() {
+                                Logger.modManager.toggleSelected(mod);
+                              });
+                            }
+                          },
+                        );
+                      },
                     ),
-                    onLongPress: () {
-                      if (!Logger.modManager.isInSelectionMode) {
-                        Logger.modManager.toggleSelected(mod);
-                      }
-                    },
-                    onTap: () {
-                      if (Logger.modManager.isInSelectionMode) {
-                        // Need to trigger a state update because [isInSelectionMode] doesn't change
-                        setState(() {
-                          Logger.modManager.toggleSelected(mod);
-                        });
-                      }
-                    },
-                  );
-                },
+                  ),
+                ),
+                _scrollController,
               ),
               Padding(
                 padding: const EdgeInsets.all(50),

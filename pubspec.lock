@@ -17,6 +17,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
+  auto_scrolling:
+    dependency: "direct main"
+    description:
+      name: auto_scrolling
+      sha256: "9faac204006cab915d6fae4f86f6e2c2b56089bc8da5861185061356b041fdd0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   boolean_selector:
     dependency: transitive
     description:
