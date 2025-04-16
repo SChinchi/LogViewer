@@ -153,8 +153,8 @@ class _DropZoneState extends State<_DropZone> {
   Future<void> _onPerformDrop(PerformDropEvent event) async {
     final reader = event.session.items.first.dataReader!;
     var progress = reader.getFile(Formats.plainTextFile, (file) async {
-      final stream = await file.getStream().toList();
-      final fileLines = utf8.decode(stream[0]).split('\n');
+      final stream = (await file.getStream().toList()).expand((x) => x).toList();
+      final fileLines = utf8.decode(stream).split('\n');
       if (mounted) {
         _tryNavigate(context, fileLines);
       }
