@@ -50,6 +50,19 @@ class Event {
       modName = modPattern.group(1);
     }
   }
+
+  Event.clone(Event event) {
+    severity = event.severity;
+    source = event.source;
+    string = event.string;
+    fullString = event.fullString;
+    fullStringNoPrefix = event.fullStringNoPrefix;
+    color = event.color;
+    index = event.index;
+    lineCount = event.lineCount;
+    repeat = repeat;
+    modName = event.modName;
+  }
 }
 
 class Logger
@@ -350,21 +363,13 @@ class Logger
   }
 }
 
-class ListItem {
-  String text;
-  Color color;
-  int? repeat;
-
-  ListItem({required this.text, required this.color, this.repeat});
-}
-
 class Diagnostics {
-  static List<ListItem> dependencyIssues = [];
-  static List<ListItem> modsCrashingOnAwake = [];
-  static List<ListItem> hookFails = [];
-  static List<ListItem> stuckLoading = [];
-  static List<ListItem> missingMemberExceptions = [];
-  static List<ListItem> mostCommonRecurrentErrors = [];
+  static List<Event> dependencyIssues = [];
+  static List<Event> modsCrashingOnAwake = [];
+  static List<Event> hookFails = [];
+  static List<Event> stuckLoading = [];
+  static List<Event> missingMemberExceptions = [];
+  static List<Event> mostCommonRecurrentErrors = [];
 
   static _reset() {
     dependencyIssues.clear();
@@ -386,31 +391,33 @@ class Diagnostics {
     final encounteredExceptions = <String>{};
     final encounteredCommonErrors = <String>{};
     var currentMod = '';
-    for (final e in Logger.events) {
-      if (e.modName != null) {
-        currentMod = e.modName!;
+    for (final event in Logger.events) {
+      if (event.modName != null) {
+        currentMod = event.modName!;
       }
-      if (missingDependency.firstMatch(e.string) != null || incompatibleDependency.firstMatch(e.string) != null) {
-        dependencyIssues.add(ListItem(text: e.fullString, color: e.color));
+      if (missingDependency.firstMatch(event.string) != null || incompatibleDependency.firstMatch(event.string) != null) {
+        dependencyIssues.add(event);
       }
-      if (chainLoaderPattern.firstMatch(e.fullString) != null) {
-        modsCrashingOnAwake.add(ListItem(text: '$currentMod\n${e.fullString}', color: e.color));
+      if (chainLoaderPattern.firstMatch(event.fullString) != null) {
+        final eventCopy = Event.clone(event);
+        eventCopy.fullString = '$currentMod\n${eventCopy.fullString}';
+        modsCrashingOnAwake.add(eventCopy);
       }
-      if (stuckLoadingPattern.firstMatch(e.fullString) != null) {
-        stuckLoading.add(ListItem(text: e.fullString, color: e.color));
+      if (stuckLoadingPattern.firstMatch(event.fullString) != null) {
+        stuckLoading.add(event);
       }
-      if (flawedHookPattern.firstMatch(e.fullString) != null) {
-        hookFails.add(ListItem(text: e.fullString, color: e.color));
+      if (flawedHookPattern.firstMatch(event.fullString) != null) {
+        hookFails.add(event);
       }
-      if (missingPattern.firstMatch(e.string) != null && !encounteredExceptions.contains(e.fullStringNoPrefix)) {
-        missingMemberExceptions.add(ListItem(text: e.fullString, color: e.color));
-        encounteredExceptions.add(e.fullStringNoPrefix);
+      if (missingPattern.firstMatch(event.string) != null && !encounteredExceptions.contains(event.fullStringNoPrefix)) {
+        missingMemberExceptions.add(event);
+        encounteredExceptions.add(event.fullStringNoPrefix);
       }
-      if (e.repeat > 0 && e.severity < 2 && !encounteredCommonErrors.contains(e.fullStringNoPrefix)) {
-        mostCommonRecurrentErrors.add(ListItem(text: e.fullString, color: e.color, repeat: e.repeat));
-        encounteredCommonErrors.add(e.fullStringNoPrefix);
+      if (event.repeat > 0 && event.severity < 2 && !encounteredCommonErrors.contains(event.fullStringNoPrefix)) {
+        mostCommonRecurrentErrors.add(event);
+        encounteredCommonErrors.add(event.fullStringNoPrefix);
       }
     }
-    mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat!.compareTo(event1.repeat!));
+    mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
   }
 }
