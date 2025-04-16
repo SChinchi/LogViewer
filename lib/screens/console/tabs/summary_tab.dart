@@ -11,9 +11,7 @@ class SummaryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       itemCount: Logger.summary.length,
-      itemBuilder: (context, index) {
-        return Text(Logger.summary[index]);
-      },
+      itemBuilder: (context, index) => Logger.summary[index],
     );
   }
 }

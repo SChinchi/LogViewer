@@ -76,7 +76,7 @@ class Logger
 
   static final events = <Event>[];
   static final modManager = ModManager();
-  static final summary = <String>[];
+  static final summary = <Text>[];
 
   static var _severity = Constants.logSeverity.length - 1;
   static var _searchString = '';
@@ -170,19 +170,22 @@ class Logger
       final unityLine = RegExp(r'^Running under Unity');
       final patcherLine = RegExp(r'^Loaded \d+ patcher method from \[.*\]');
       final pluginsLine = RegExp(r'^\d+ plugins to load$');
-      final lastSummaryLine = RegExp(r'^WwiseUnity: Setting Plugin DLL path to');
+      final wWiseLine = RegExp(r'^WwiseUnity: Setting Plugin DLL path to');
       for (final event in events) {
-        final isLastSummaryLine = lastSummaryLine.firstMatch(event.string) != null;
+        final wWiseMatch = wWiseLine.firstMatch(event.string) != null;
+        final isLastSummaryLine = wWiseMatch;
         if (isLastSummaryLine ||
             bepInExLine.firstMatch(event.string) != null ||
             unityLine.firstMatch(event.string) != null ||
             patcherLine.firstMatch(event.string) != null ||
             pluginsLine.firstMatch(event.string) != null) {
-          if (!event.string.contains(lastSummaryLine) ||
-              // Checking if the installed path is illegitimate to add it to the summary.
-              // Epic Games does allow any directory path so some rare false positives are expected.
-              (!event.string.contains('/steamapps/common/Risk') && !event.string.contains('/Epic Games/Risk'))) {
-            summary.add(event.string);
+          if (!wWiseMatch) {
+            summary.add(Text(event.string));
+          }
+          // Checking if the installed path is illegitimate to add it to the summary.
+          // Epic Games does allow any directory path so some rare false positives are expected.
+          else if (!event.string.contains('/steamapps/common/Risk') && !event.string.contains('/Epic Games/Risk')) {
+            summary.add(Text(event.string, style: const TextStyle(color: Colors.yellow)));
           }
         }
         if (isLastSummaryLine) {
