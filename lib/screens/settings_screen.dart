@@ -177,17 +177,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onFieldSubmitted: (value) {
                                   setState(() {
                                     _collapsibleThreshold = int.parse(_collapsibleTextController.text);
+                                    _collapsibleTextController.text = '';
                                     Settings.setConsoleEventMaxLines(_collapsibleThreshold);
                                   });
                                   Navigator.pop(context);
                                 },
                                 onTapCancel: () {
-                                  _collapsibleTextController.text = _collapsibleThreshold.toString();
+                                  _collapsibleTextController.text = '';
                                   Navigator.pop(context);
                                 },
                                 onTapOK: () {
                                   setState(() {
                                     _collapsibleThreshold = int.parse(_collapsibleTextController.text);
+                                    _collapsibleTextController.text = '';
                                     Settings.setConsoleEventMaxLines(_collapsibleThreshold);
                                   });
                                   Navigator.pop(context);
@@ -211,17 +213,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onFieldSubmitted: (value) {
                                   setState(() {
                                     _textSizeThreshold = int.parse(_textSizeThresholdTextController.text);
+                                    _textSizeThresholdTextController.text = '';
                                     Settings.setTextSizeCopyThreshold(_textSizeThreshold);
                                   });
                                   Navigator.pop(context);
                                 },
                                 onTapCancel: () {
-                                  _textSizeThresholdTextController.text = _textSizeThreshold.toString();
+                                  _textSizeThresholdTextController.text = '';
                                   Navigator.pop(context);
                                 },
                                 onTapOK: () {
                                   setState(() {
                                     _textSizeThreshold = int.parse(_textSizeThresholdTextController.text);
+                                    _textSizeThresholdTextController.text = '';
                                     Settings.setTextSizeCopyThreshold(_textSizeThreshold);
                                   });
                                   Navigator.pop(context);
