@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:log_viewer/log_parser.dart';
 
 class SummaryPage extends StatelessWidget {

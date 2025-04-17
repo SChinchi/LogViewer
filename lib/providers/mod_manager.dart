@@ -69,7 +69,7 @@ class ModManager with ChangeNotifier {
 
   void recalculateFilteredMods() {
     filteredMods.clear();
-    for (var mod in mods) {
+    for (final mod in mods) {
       if (_passesFilter(mod)) {
         filteredMods.add(mod);
       }
@@ -102,9 +102,9 @@ class ModManager with ChangeNotifier {
   }
 
   void toggleSelected(Mod mod) {
-    var oldMode = mods.any((m) => m.isSelected);
+    final oldMode = mods.any((m) => m.isSelected);
     mod.isSelected = !mod.isSelected;
-    var newMode = mods.any((m) => m.isSelected);
+    final newMode = mods.any((m) => m.isSelected);
     if (oldMode != newMode) {
       isInSelectionMode = newMode;
       notifyListeners();
@@ -113,7 +113,7 @@ class ModManager with ChangeNotifier {
 
   void clearSelections() {
     if (isInSelectionMode) {
-      for (var mod in mods) {
+      for (final mod in mods) {
         mod.isSelected = false;
       }
       isInSelectionMode = false;

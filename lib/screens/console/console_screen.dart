@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
+import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/settings.dart';
+import 'package:log_viewer/themes/themes.dart';
 import 'package:provider/provider.dart';
 
-import '../../constants.dart';
-import '../../providers/mod_manager.dart';
-import '../../themes/themes.dart';
 import '../settings_screen.dart';
 import 'tabs/summary_tab.dart';
 import 'tabs/modlist_tab.dart';
@@ -66,7 +66,7 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
               IconButton(
                 icon: const Icon(Icons.copy),
                 onPressed: () async {
-                  var text = Logger.modManager.mods.where((m) => m.isSelected).map((m) => m.guid);
+                  final text = Logger.modManager.mods.where((m) => m.isSelected).map((m) => m.guid);
                   await Clipboard.setData(ClipboardData(text: text.join('\n')));
                   Logger.modManager.clearSelections();
                 },
@@ -112,10 +112,10 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
         bottom: TabBar(
           controller: tabController,
           tabs: const [
-            Tab(text: Constants.titleTab_1),
-            Tab(text: Constants.titleTab_2),
-            Tab(text: Constants.titleTab_3),
-            Tab(text: Constants.titleTab_4),
+            Tab(text: Constants.titleTabSummary),
+            Tab(text: Constants.titleTabMods),
+            Tab(text: Constants.titleTabConsole),
+            Tab(text: Constants.titleTabDiagnostics),
           ],
         ),
       ),
@@ -132,27 +132,25 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
   }
 
   List<String> _addTo(List<String> items) {
-    var manager = Logger.modManager;
-    var set = items.toSet();
-    for (var mod in manager.mods) {
+    final set = items.toSet();
+    for (final mod in Logger.modManager.mods) {
       if (mod.isSelected) {
         set.add(mod.fullName);
       }
     }
-    var newItems = set.toList();
+    final newItems = set.toList();
     newItems.sort();
     return newItems;
   }
 
   List<String> _removeFrom(List<String> items) {
-    var manager = Logger.modManager;
-    var set = items.toSet();
-    for (var mod in manager.mods) {
+    final set = items.toSet();
+    for (final mod in Logger.modManager.mods) {
       if (mod.isSelected) {
         set.remove(mod.fullName);
       }
     }
-    var newItems = set.toList();
+    final newItems = set.toList();
     newItems.sort();
     return newItems;
   }

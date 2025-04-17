@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/widgets/expandable_card.dart';
 
@@ -19,22 +19,22 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> with SingleTickerProv
   Widget build(BuildContext context) {
     final data = <ExpandableList>[];
     if (Diagnostics.dependencyIssues.isNotEmpty) {
-      data.add(ExpandableList(heading: 'Missing Dependencies & Incompatibilities', items: Diagnostics.dependencyIssues));
+      data.add(ExpandableList(heading: Constants.diagnosticsDependencies, items: Diagnostics.dependencyIssues));
     }
     if (Diagnostics.modsCrashingOnAwake.isNotEmpty) {
-      data.add(ExpandableList(heading: 'Mods Crashing On Awake', items: Diagnostics.modsCrashingOnAwake));
+      data.add(ExpandableList(heading: Constants.diagnosticsCrashingMods, items: Diagnostics.modsCrashingOnAwake));
     }
     if (Diagnostics.hookFails.isNotEmpty) {
-      data.add(ExpandableList(heading: 'Flawed Code Modifications', items: Diagnostics.hookFails));
+      data.add(ExpandableList(heading: Constants.diagnosticsBadHooks, items: Diagnostics.hookFails));
     }
     if (Diagnostics.stuckLoading.isNotEmpty) {
-      data.add(ExpandableList(heading: 'Stuck Loading x%', items: Diagnostics.stuckLoading));
+      data.add(ExpandableList(heading: Constants.diagnosticsStuckLoading, items: Diagnostics.stuckLoading));
     }
     if (Diagnostics.missingMemberExceptions.isNotEmpty) {
-      data.add(ExpandableList(heading: 'Missing Member Exception', items: Diagnostics.missingMemberExceptions));
+      data.add(ExpandableList(heading: Constants.diagnosticsMissingMember, items: Diagnostics.missingMemberExceptions));
     }
     if (Diagnostics.mostCommonRecurrentErrors.isNotEmpty) {
-      data.add(ExpandableList(heading: 'Most Spammed Errors', items: Diagnostics.mostCommonRecurrentErrors));
+      data.add(ExpandableList(heading: Constants.diagnosticsRepeatErrors, items: Diagnostics.mostCommonRecurrentErrors));
     }
     return ListView.builder(
       itemBuilder: (BuildContext context, int index) {

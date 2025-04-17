@@ -2,13 +2,12 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
+import 'package:provider/provider.dart';
 
 class ModListPage extends StatelessWidget {
   final TabController tabController;

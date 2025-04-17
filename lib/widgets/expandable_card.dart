@@ -11,6 +11,7 @@ import '../constants.dart';
 import '../log_parser.dart';
 import '../settings.dart';
 import '../themes/themes.dart';
+import '../utils.dart';
 
 class ExpandableCard extends StatefulWidget {
   final Event event;
@@ -24,7 +25,6 @@ class ExpandableCard extends StatefulWidget {
 class _ExpandableCardState extends State<ExpandableCard> {
   _ExpandableCardState();
 
-  late Event event;
   late RenderBox _renderBox;
   var _tapEventOffset = Offset.zero;
 
@@ -35,7 +35,7 @@ class _ExpandableCardState extends State<ExpandableCard> {
 
   @override
   Widget build(BuildContext context) {
-    event = widget.event;
+    final event = widget.event;
     _renderBox = Overlay.of(context).context.findRenderObject() as RenderBox;
     return Stack(
       children: [
@@ -49,12 +49,12 @@ class _ExpandableCardState extends State<ExpandableCard> {
               _tapEventOffset = detail.globalPosition;
             },
             onLongPress: () {
-              if (_isMobile()) {
+              if (isMobilePlatform()) {
                 _showDialog(context, event.fullString);
               }
             },
             onSecondaryTap: () {
-              if (!_isMobile()) {
+              if (!isMobilePlatform()) {
                 _showDialog(context, event.fullString);
               }
             },
@@ -73,10 +73,6 @@ class _ExpandableCardState extends State<ExpandableCard> {
     );
   }
 
-  bool _isMobile() {
-    return Platform.isAndroid || Platform.isIOS;
-  }
-
   void _showDialog(BuildContext context, String text) async {
     showMenu(
       context: context,
@@ -92,6 +88,7 @@ class _ExpandableCardState extends State<ExpandableCard> {
               await Clipboard.setData(ClipboardData(text: text));
               return;
             }
+            // TODO: Fix for Android
             final clipboard = SystemClipboard.instance;
             if (clipboard == null) {
               return;

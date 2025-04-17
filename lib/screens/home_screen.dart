@@ -6,12 +6,13 @@ import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
-
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/main.dart';
 import 'package:log_viewer/themes/themes.dart';
+import 'package:log_viewer/utils.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+
 import 'console/console_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -91,7 +92,7 @@ class _FilePickerState extends State<_FilePicker>{
         result = await FilePicker.platform.pickFiles(allowMultiple: false);
         if (result != null) {
           final fileLines = await _loadFromFile(result!.files[0].xFile.path);
-          if (Platform.isAndroid || Platform.isIOS) {
+          if (isMobilePlatform()) {
             FilePicker.platform.clearTemporaryFiles();
           }
           if (context.mounted) {

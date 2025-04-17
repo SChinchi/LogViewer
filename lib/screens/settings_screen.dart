@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/settings.dart';
@@ -28,11 +27,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void initState() {
-    var whitelist = Settings.getDeprecatedAndOldWhitelist();
+    final whitelist = Settings.getDeprecatedAndOldWhitelist();
     _whitelistOldText = whitelist.join('\n');
     _whitelistTextController.text = _whitelistOldText;
     _whitelistSubtitle = _countItems(whitelist);
-    var problematic = Settings.getProblematicModlist();
+    final problematic = Settings.getProblematicModlist();
     _problematicOldText = problematic.join('\n');
     _problematicTextController.text = _problematicOldText;
     _problematicSubtitle = _countItems(problematic);
@@ -62,7 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: ListView(
                 children: [
                   SettingsSection(
-                    title: 'Mod list',
+                    title: Constants.settingsSectionMods,
                     tiles: [
                       ListTile(
                         title: const Text('Use Old Date Threshold'),
@@ -82,92 +81,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           });
                         },
                       ),
+                      ListTile(
+                        title: const Text('Set Old Mods Date'),
+                        subtitle: Text(Settings.getCutOffDateString()),
+                        enabled: _cutOffDateEnabled,
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime(2019),
+                            lastDate: DateTime.now(),
+                            currentDate: Settings.getCutOffDate() ?? DateTime.now(),
+                          );
+                          await Settings.setCutOffDate(date);
+                          setState(() {
+                            Logger.modStatusNetRequest = Logger.getAllModsStatus();
+                          });
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('Edit Deprecated/Old Mod Whitelist'),
+                        subtitle: Text(_whitelistSubtitle),
+                        onTap: () {
+                          _whitelistOldText = _whitelistTextController.text;
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return MultilineTextDialog(
+                                title: 'Deprecated/Old Mod Whitelist',
+                                textController: _whitelistTextController,
+                                onTapCancel: () {
+                                  _whitelistTextController.text = _whitelistOldText;
+                                  Navigator.of(context).pop();
+                                },
+                                onTapOK: () {
+                                  setState(() {
+                                    final modlist = _convertToInvariantList(_whitelistTextController.text);
+                                    _whitelistTextController.text = modlist.join('\n');
+                                    _whitelistSubtitle = _countItems(modlist);
+                                    Settings.setDeprecatedAndOldWhitelist(modlist);
+                                  });
+                                  Navigator.of(context).pop();
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('Edit Problematic Mod list'),
+                        subtitle: Text(_problematicSubtitle),
+                        onTap: () {
+                          _problematicOldText = _problematicTextController.text;
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return MultilineTextDialog(
+                                title: 'Problematic Mod List',
+                                textController: _problematicTextController,
+                                onTapCancel: () {
+                                  _problematicTextController.text = _problematicOldText;
+                                  Navigator.of(context).pop();
+                                },
+                                onTapOK: () {
+                                  setState(() {
+                                    final modlist = _convertToInvariantList(_problematicTextController.text);
+                                    _problematicTextController.text = modlist.join('\n');
+                                    _problematicSubtitle = _countItems(modlist);
+                                    Settings.setProblematicModlist(modlist);
+                                  });
+                                  Navigator.of(context).pop();
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ],
                   ),
-                  ListTile(
-                    title: const Text('Set Old Mods Date'),
-                    subtitle: Text(Settings.getCutOffDateString()),
-                    enabled: _cutOffDateEnabled,
-                    onTap: () async {
-                      var date = await showDatePicker(
-                        context: context,
-                        firstDate: DateTime(2019),
-                        lastDate: DateTime.now(),
-                        currentDate: Settings.getCutOffDate() ?? DateTime.now(),
-                      );
-                      await Settings.setCutOffDate(date);
-                      setState(() {
-                        Logger.modStatusNetRequest = Logger.getAllModsStatus();
-                      });
-                    },
-                  ),
-                  ListTile(
-                    title: const Text('Edit Deprecated/Old Mod Whitelist'),
-                    subtitle: Text(_whitelistSubtitle),
-                    onTap: () {
-                      _whitelistOldText = _whitelistTextController.text;
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (BuildContext context) {
-                          return MultilineTextDialog(
-                            title: 'Deprecated/Old Mod Whitelist',
-                            textController: _whitelistTextController,
-                            onTapCancel: () {
-                              _whitelistTextController.text = _whitelistOldText;
-                              Navigator.of(context).pop();
-                            },
-                            onTapOK: () {
-                              setState(() {
-                                final modlist = _convertToInvariantList(_whitelistTextController.text);
-                                _whitelistTextController.text = modlist.join('\n');
-                                _whitelistSubtitle = _countItems(modlist);
-                                Settings.setDeprecatedAndOldWhitelist(modlist);
-                              });
-                              Navigator.of(context).pop();
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  ListTile(
-                    title: const Text('Edit Problematic Mod list'),
-                    subtitle: Text(_problematicSubtitle),
-                    onTap: () {
-                      _problematicOldText = _problematicTextController.text;
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (BuildContext context) {
-                          return MultilineTextDialog(
-                            title: 'Problematic Mod List',
-                            textController: _problematicTextController,
-                            onTapCancel: () {
-                              _problematicTextController.text = _problematicOldText;
-                              Navigator.of(context).pop();
-                            },
-                            onTapOK: () {
-                              setState(() {
-                                final modlist = _convertToInvariantList(_problematicTextController.text);
-                                _problematicTextController.text = modlist.join('\n');
-                                _problematicSubtitle = _countItems(modlist);
-                                Settings.setProblematicModlist(modlist);
-                              });
-                              Navigator.of(context).pop();
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
                   SettingsSection(
-                    title: 'Console',
+                    title: Constants.settingsSectionConsole,
                     tiles: [
                       ListTile(
                         title: const Text('Collapsible Console Line Threshold'),
-                        subtitle: Text(
-                            _collapsibleThreshold > 0 ? _collapsibleThreshold.toString() : 'None'),
+                        subtitle: Text(_collapsibleThreshold > 0 ? _collapsibleThreshold.toString() : 'None'),
                         onTap: () {
                           showDialog(
                             context: context,
@@ -231,7 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               );
                             },
                           );
-                        }
+                        },
                       ),
                     ],
                   ),
@@ -324,24 +322,23 @@ class MultilineTextDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(title, /*style: const TextStyle(color: Colors.white)*/),
-      backgroundColor: AppTheme.dialogBackgroundColor, // Color(0xFF333333),
+      title: Text(title),
+      backgroundColor: AppTheme.dialogBackgroundColor,
       content: TextField(
         controller: textController,
         maxLines: null,
         expands: true,
         keyboardType: TextInputType.multiline,
         autofocus: true,
-        //style: const TextStyle(color: Colors.white),
       ),
       actions: [
         TextButton(
           onPressed: onTapCancel,
-          child: const Text('Cancel'),
+          child: const Text(Constants.buttonCancel),
         ),
         TextButton(
           onPressed: onTapOK,
-          child: const Text('OK'),
+          child: const Text(Constants.buttonOk),
         ),
       ],
     );
@@ -379,16 +376,15 @@ class NumberDialog extends StatelessWidget {
         onFieldSubmitted: onFieldSubmitted,
         maxLines: 1,
         autofocus: true,
-        //style: const TextStyle(color: Colors.white),
       ),
       actions: [
         TextButton(
           onPressed: onTapCancel,
-          child: const Text('Cancel'),
+          child: const Text(Constants.buttonCancel),
         ),
         TextButton(
             onPressed: onTapOK,
-            child: const Text('OK')
+            child: const Text(Constants.buttonOk)
         ),
       ],
     );

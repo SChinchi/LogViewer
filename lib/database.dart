@@ -5,6 +5,8 @@ import 'package:flutter/widgets.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'constants.dart';
+
 class DB {
   static late Future<Database> database;
 
@@ -19,10 +21,14 @@ class DB {
     //var v = await getDatabasesPath();
     //print('PATH: $v');
     database = openDatabase(
-      join(await getDatabasesPath(), 'mods.db'),
+      join(await getDatabasesPath(), Constants.dbName),
       onCreate: (db, version) {
         return db.execute(
-          'CREATE TABLE mods(full_name TEXT PRIMARY KEY, date_ts TEXT, date_db TEXT, deprecated INTEGER)',
+          'CREATE TABLE ${Constants.tableName}('
+          '${Entry.fullNameKey} TEXT PRIMARY KEY,'
+          '${Entry.dateTsKey} TEXT,'
+          '${Entry.dateDbKey} TEXT,'
+          '${Entry.deprecatedKey} INTEGER)',
         );
       },
       version: 1,
@@ -32,7 +38,7 @@ class DB {
   static Future<void> insertMod(Entry mod) async {
     final db = await database;
     await db.insert(
-      'mods',
+      Constants.tableName,
       mod.serialise(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -40,26 +46,25 @@ class DB {
 
   static Future<void> updateMod(Entry mod) async {
     final db = await database;
-
     await db.update(
-      'mods',
+      Constants.tableName,
       mod.serialise(),
-      where: 'full_name = ?',
+      where: '${Entry.fullNameKey} = ?',
       whereArgs: [mod.fullName],
     );
   }
 
   static Future<Map<String, Entry>> allMods() async {
     final db = await database;
-    final List<Map<String, Object?>> entries = await db.query('mods');
+    final List<Map<String, Object?>> entries = await db.query(Constants.tableName);
     final result = <String, Entry>{};
-    for (var kvp in entries) {
-      var fullName = kvp['full_name'] as String;
+    for (final kvp in entries) {
+      final fullName = kvp[Entry.fullNameKey] as String;
       result[fullName] = Entry(
           fullName: fullName,
-          dateTs: kvp['date_ts'] as String,
-          dateDb: kvp['date_db'] as String,
-          isDeprecated: kvp['deprecated'] as int,
+          dateTs: kvp[Entry.dateTsKey] as String,
+          dateDb: kvp[Entry.dateDbKey] as String,
+          isDeprecated: kvp[Entry.deprecatedKey] as int,
       );
     }
     return result;
@@ -67,6 +72,10 @@ class DB {
 }
 
 class Entry {
+  static const fullNameKey = 'full_name';
+  static const dateTsKey = 'date_ts';
+  static const dateDbKey = 'date_db';
+  static const deprecatedKey = 'deprecated';
   final String fullName;
   final String dateTs;
   final String dateDb;
@@ -81,10 +90,10 @@ class Entry {
 
   Map<String, Object?> serialise() {
     return {
-      'full_name': fullName,
-      'date_ts': dateTs,
-      'date_db': dateDb,
-      'deprecated': isDeprecated,
+      fullNameKey: fullName,
+      dateTsKey: dateTs,
+      dateDbKey: dateDb,
+      deprecatedKey: isDeprecated,
     };
   }
 }

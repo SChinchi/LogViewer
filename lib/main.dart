@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:log_viewer/settings.dart';
 
 import 'screens/home_screen.dart';
+import 'settings.dart';
+import 'themes/themes.dart';
 
 void main(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +21,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.orange),
+      theme: AppTheme.theme,
       home: const HomeScreen(title: ''),
     );
   }

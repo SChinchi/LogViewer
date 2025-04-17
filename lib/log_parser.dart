@@ -4,12 +4,12 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:log_viewer/settings.dart';
-import 'package:log_viewer/themes/themes.dart';
 
 import 'constants.dart';
 import 'database.dart';
 import 'providers/mod_manager.dart';
+import 'settings.dart';
+import 'themes/themes.dart';
 
 final _consoleSearchFilterPattens = [
   r'\s*(?<exclude>exclude:(?<exclude_term>\(.*\)|[^(\s]\S*))\s*',
@@ -18,6 +18,8 @@ final _consoleSearchFilterPattens = [
 ];
 
 class Event {
+  static final _modPattern = RegExp(r'^TS Manifest: (.*)');
+
   late int severity;
   late String source;
   late String string;
@@ -29,12 +31,12 @@ class Event {
   int repeat = 0;
   String? modName;
 
-  Event(String s, RegExpMatch match) {
+  Event(String text, RegExpMatch match) {
     severity = Constants.logSeverity.indexOf(match.group(2)!);
     source = match.group(3)!;
     string = match.group(4)!;
-    fullString = s;
-    fullStringNoPrefix = s.substring(match.group(1)!.length);
+    fullString = text;
+    fullStringNoPrefix = text.substring(match.group(1)!.length);
     if (severity < 2) {
       color = Colors.red;
     }
@@ -45,7 +47,7 @@ class Event {
       color = AppTheme.primaryColor;
     }
     lineCount = fullString.split('\n').length;
-    final modPattern = RegExp(r'^TS Manifest: (.*)').firstMatch(match.group(4)!);
+    final modPattern = _modPattern.firstMatch(match.group(4)!);
     if (modPattern != null) {
       modName = modPattern.group(1);
     }
@@ -88,18 +90,18 @@ class Logger
   static final filteredEvents = <Event>[];
   static late Future modStatusNetRequest;
 
-  static void _addEvent(String s) {
-    final match = _eventPattern.firstMatch(s);
+  static void _addEvent(String text) {
+    final match = _eventPattern.firstMatch(text);
     if (match == null) {
       return;
     }
     // Compress repeated messages for the console
-    final sNoPrefix = s.substring(match.group(1)!.length);
+    final sNoPrefix = text.substring(match.group(1)!.length);
     if (events.isNotEmpty && events.last.fullStringNoPrefix == sNoPrefix) {
       events.last.repeat++;
       return;
     }
-    final event = Event(s, match);
+    final event = Event(text, match);
     event.index = events.length;
     events.add(event);
     if (_passesFilter(event)) {
@@ -122,9 +124,9 @@ class Logger
     filteredEvents.clear();
     final start = _eventStart;
     final end = max(_eventStart, events.length+_eventEnd);
-    for (final e in events.sublist(start, end)) {
-      if (_passesFilter(e)) {
-        filteredEvents.add(e);
+    for (final event in events.sublist(start, end)) {
+      if (_passesFilter(event)) {
+        filteredEvents.add(event);
       }
     }
   }

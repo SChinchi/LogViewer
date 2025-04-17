@@ -16,3 +16,7 @@ Widget addMiddleScrollFunctionality(Scrollbar scrollbar, ScrollController contro
     child: scrollbar,
   );
 }
+
+bool isMobilePlatform() {
+  return Platform.isAndroid || Platform.isIOS;
+}
