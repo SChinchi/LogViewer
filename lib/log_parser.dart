@@ -433,7 +433,7 @@ class Diagnostics {
     final flawedHookPattern = RegExp(r'(MonoMod\.RuntimeDetour\.(IL)?Hook\.\.ctor|HarmonyLib\.PatchClassProcessor\.Patch)');
     final missingPattern = RegExp(r'^Missing(Field|Method)Exception');
     final encounteredExceptions = <String>{};
-    final encounteredCommonErrors = <String>{};
+    final encounteredCommonErrors = <String, Event>{};
     var currentMod = '';
     for (final event in Logger.events) {
       if (event.modName != null) {
@@ -457,11 +457,16 @@ class Diagnostics {
         missingMemberExceptions.add(event);
         encounteredExceptions.add(event.fullStringNoPrefix);
       }
-      if (event.repeat > 0 && event.severity < 2 && !encounteredCommonErrors.contains(event.fullStringNoPrefix)) {
-        mostCommonRecurrentErrors.add(event);
-        encounteredCommonErrors.add(event.fullStringNoPrefix);
+      if (event.repeat > 0 && event.severity < 2) {
+        if (!encounteredCommonErrors.containsKey(event.fullStringNoPrefix)) {
+          encounteredCommonErrors[event.fullStringNoPrefix] = event;
+        }
+        else if (encounteredCommonErrors[event.fullStringNoPrefix]!.repeat < event.repeat) {
+          encounteredCommonErrors[event.fullStringNoPrefix] = event;
+        }
       }
     }
+    mostCommonRecurrentErrors.addAll(encounteredCommonErrors.values);
     mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
   }
 }
