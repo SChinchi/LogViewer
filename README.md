@@ -33,3 +33,5 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 Follow the steps described in the Flutter [documentation](https://docs.flutter.dev/get-started/install) for your current environment.
 
 Do note the app is currently only tested on Windows and Android.
+
+Run `build_all.ps1` to generate release versions for any supported platforms which can be found in "build/binaries".
