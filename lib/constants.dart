@@ -10,6 +10,7 @@ class Constants {
 
   static const dropText = 'Drop file';
   static const loadButton = 'Open file';
+  static const loadingText = 'Loading';
   static const parseError = 'Failed to parse file; empty or not a log.';
   static const searchText = 'Search';
   static const buttonOk = 'OK';

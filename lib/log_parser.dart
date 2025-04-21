@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -67,9 +68,113 @@ class Event {
   }
 }
 
-class Logger
-{
+class Parser {
   static final _eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
+
+  final summary = <Text>[];
+  final mods = <Mod>[];
+  final events = <Event>[];
+
+  void _addEvent(String text) {
+    final match = _eventPattern.firstMatch(text);
+    if (match == null) {
+      return;
+    }
+    // Compress repeated messages for the console
+    final sNoPrefix = text.substring(match.group(1)!.length);
+    if (events.isNotEmpty && events.last.fullStringNoPrefix == sNoPrefix) {
+      events.last.repeat++;
+      return;
+    }
+    final event = Event(text, match);
+    event.index = events.length;
+    events.add(event);
+    if (event.modName != null) {
+      mods.add(Mod(event.modName!));
+    }
+  }
+
+  void _createSummary() {
+    final bepInExLine = RegExp(r'^BepInEx \d+\.\d+\.\d+.\d+');
+    final unityLine = RegExp(r'^Running under Unity');
+    final patcherLine = RegExp(r'^Loaded \d+ patcher method from \[.*\]');
+    final pluginsLine = RegExp(r'^\d+ plugins to load$');
+    final wWiseLine = RegExp(r'^WwiseUnity: Setting Plugin DLL path to');
+    for (final event in events) {
+      final wWiseMatch = wWiseLine.firstMatch(event.string) != null;
+      final isLastSummaryLine = wWiseMatch;
+      if (isLastSummaryLine ||
+          bepInExLine.firstMatch(event.string) != null ||
+          unityLine.firstMatch(event.string) != null ||
+          patcherLine.firstMatch(event.string) != null ||
+          pluginsLine.firstMatch(event.string) != null) {
+        if (!wWiseMatch) {
+          summary.add(Text(event.string));
+        }
+        // Checking if the installed path is illegitimate to add it to the summary.
+        // Epic Games does allow any directory path so some rare false positives are expected.
+        else if (!event.string.contains('/steamapps/common/Risk') && !event.string.contains('/Epic Games/Risk')) {
+          summary.add(Text(event.string, style: const TextStyle(color: Colors.yellow)));
+        }
+      }
+      if (isLastSummaryLine) {
+        return;
+      }
+    }
+  }
+
+  void parse(List<String> lines, SendPort sender)
+  {
+    try {
+      var progress = 0;
+      var index = 0;
+      final total = lines.length;
+      final sb = StringBuffer(lines[0]);
+      for (final line in lines.sublist(1, lines.length)) {
+        final match = _eventPattern.firstMatch(line);
+        if (match != null) {
+          _addEvent(sb.toString().trimRight());
+          sb.clear();
+        }
+        sb.writeln(line);
+        index += 1;
+        if (index % 5000 == 0) {
+          final currentProgress = (index / total * 100).toInt();
+          if (currentProgress != progress) {
+            progress = currentProgress;
+            sender.send(progress);
+          }
+        }
+      }
+      if (sb.isNotEmpty) {
+        _addEvent(sb.toString().trimRight());
+      }
+
+      // Prefix each message with its index; useful for range searching
+      final eventNum = events.length;
+      final length = eventNum.toString().length;
+      for (final event in events) {
+        event.fullString = '${event.index.toString().padLeft(length, '0')} ${event.fullString}';
+      }
+
+      _createSummary();
+
+      sender.send({
+        'success': true,
+        'summary': summary,
+        'mods': mods,
+        'events': events,
+      });
+    }
+    on Exception catch (_) {
+      sender.send({
+        'success': false
+      });
+    }
+  }
+}
+
+class Logger {
   static final _filterPattern = RegExp('^(${_consoleSearchFilterPattens.join('|')})', caseSensitive: false);
 
   static const intMin = ~(-1 >>> 1);
@@ -89,28 +194,7 @@ class Logger
   static var _repeatThreshold = 0;
   static final filteredEvents = <Event>[];
   static late Future modStatusNetRequest;
-
-  static void _addEvent(String text) {
-    final match = _eventPattern.firstMatch(text);
-    if (match == null) {
-      return;
-    }
-    // Compress repeated messages for the console
-    final sNoPrefix = text.substring(match.group(1)!.length);
-    if (events.isNotEmpty && events.last.fullStringNoPrefix == sNoPrefix) {
-      events.last.repeat++;
-      return;
-    }
-    final event = Event(text, match);
-    event.index = events.length;
-    events.add(event);
-    if (_passesFilter(event)) {
-      filteredEvents.add(event);
-    }
-    if (event.modName != null) {
-      modManager.add(Mod(event.modName!));
-    }
-  }
+  static var isLoading = false;
 
   static bool _passesFilter(Event event) {
     if (event.severity <= _severity && event.repeat >= _repeatThreshold) {
@@ -143,65 +227,6 @@ class Logger
     _eventStart = startIndex;
     _eventEnd = endIndex;
     _repeatThreshold = 0;
-  }
-
-  static bool parseLines(List<String> lines)
-  {
-    _reset();
-    try {
-      final sb = StringBuffer(lines[0]);
-      for (final line in lines.sublist(1, lines.length)) {
-        final match = _eventPattern.firstMatch(line);
-        if (match != null) {
-          _addEvent(sb.toString().trimRight());
-          sb.clear();
-        }
-        sb.writeln(line);
-      }
-      if (sb.isNotEmpty) {
-        _addEvent(sb.toString().trimRight());
-      }
-      // Prefix each message with its index; useful for range searching
-      final total = events.length;
-      final length = total.toString().length;
-      for (final event in events) {
-        event.fullString = '${event.index.toString().padLeft(length, '0')} ${event.fullString}';
-      }
-
-      final bepInExLine = RegExp(r'^BepInEx \d+\.\d+\.\d+.\d+');
-      final unityLine = RegExp(r'^Running under Unity');
-      final patcherLine = RegExp(r'^Loaded \d+ patcher method from \[.*\]');
-      final pluginsLine = RegExp(r'^\d+ plugins to load$');
-      final wWiseLine = RegExp(r'^WwiseUnity: Setting Plugin DLL path to');
-      for (final event in events) {
-        final wWiseMatch = wWiseLine.firstMatch(event.string) != null;
-        final isLastSummaryLine = wWiseMatch;
-        if (isLastSummaryLine ||
-            bepInExLine.firstMatch(event.string) != null ||
-            unityLine.firstMatch(event.string) != null ||
-            patcherLine.firstMatch(event.string) != null ||
-            pluginsLine.firstMatch(event.string) != null) {
-          if (!wWiseMatch) {
-            summary.add(Text(event.string));
-          }
-          // Checking if the installed path is illegitimate to add it to the summary.
-          // Epic Games does allow any directory path so some rare false positives are expected.
-          else if (!event.string.contains('/steamapps/common/Risk') && !event.string.contains('/Epic Games/Risk')) {
-            summary.add(Text(event.string, style: const TextStyle(color: Colors.yellow)));
-          }
-        }
-        if (isLastSummaryLine) {
-          break;
-        }
-      }
-
-      modStatusNetRequest = getAllModsStatus();
-      Diagnostics.analyse();
-      return true;
-    }
-    on Exception catch (_) {
-      return false;
-    }
   }
 
   static void setSeverity(int num) {
@@ -366,6 +391,20 @@ class Logger
       })
     });
   }
+
+  static void populateData(Map data) {
+    _reset();
+    if (data['success'] != true) {
+      return;
+    }
+    for (final mod in data['mods']) {
+      Logger.modManager.add(mod);
+    }
+    getAllModsStatus();
+    Logger.summary.addAll(data['summary']);
+    Logger.events.addAll(data['events']);
+    Logger._recalculateFilteredEvents();
+  }
 }
 
 class Diagnostics {
@@ -376,7 +415,7 @@ class Diagnostics {
   static List<Event> missingMemberExceptions = [];
   static List<Event> mostCommonRecurrentErrors = [];
 
-  static _reset() {
+  static void _reset() {
     dependencyIssues.clear();
     modsCrashingOnAwake.clear();
     hookFails.clear();
@@ -385,7 +424,7 @@ class Diagnostics {
     mostCommonRecurrentErrors.clear();
   }
 
-  static analyse() {
+  static void analyse() {
     _reset();
     final missingDependency = RegExp(r'^Could not load \[.*\] because it has missing dependencies:');
     final incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');

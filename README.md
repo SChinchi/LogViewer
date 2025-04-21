@@ -28,13 +28,6 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
   - **Missing Member Exception**: for outdated mods that attempt to call missing code.
   - **Most Repeated Errors**: events logged multiple times consecutively (most likely errors) sorted in descending order.
 
-### Planned before 1.0
-
-- Main screen
-  - Add loading progress bar for big files. Optimisation might also be possible when parsing the log.
-- Console
-  - Fix copy to file on Android.
-
 ## How to build
 
 Follow the steps described in the Flutter [documentation](https://docs.flutter.dev/get-started/install) for your current environment.

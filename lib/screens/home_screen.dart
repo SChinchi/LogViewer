@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:archive/archive.dart';
@@ -33,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (MyApp.args.isNotEmpty) {
         final fileLines = await _loadFromFile(MyApp.args[0]);
         if (mounted) {
-          _tryNavigate(context, fileLines);
+          _tryLoadFile(context, fileLines);
         }
       }
     });
@@ -69,12 +70,21 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Center(child: _FilePicker()),
+            Padding(
+              padding: EdgeInsets.fromLTRB(0, 30, 0, 0),
+              child: ValueListenableBuilder(
+                valueListenable: _loadingProgress,
+                builder: (context, value, child) => Text(value > 0 ? '${Constants.loadingText}: $value%' : ''),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+final _loadingProgress = ValueNotifier<int>(0);
 
 class _FilePicker extends StatefulWidget {
   @override
@@ -89,6 +99,9 @@ class _FilePickerState extends State<_FilePicker>{
     return ElevatedButton(
       style: ElevatedButton.styleFrom(shadowColor: Colors.white),
       onPressed: () async {
+        if (Logger.isLoading) {
+          return;
+        }
         result = await FilePicker.platform.pickFiles(allowMultiple: false);
         if (result != null) {
           final fileLines = await _loadFromFile(result!.files[0].xFile.path);
@@ -96,7 +109,7 @@ class _FilePickerState extends State<_FilePicker>{
             FilePicker.platform.clearTemporaryFiles();
           }
           if (context.mounted) {
-            _tryNavigate(context, fileLines);
+            _tryLoadFile(context, fileLines);
           }
         }
       },
@@ -152,12 +165,15 @@ class _DropZoneState extends State<_DropZone> {
   }
 
   Future<void> _onPerformDrop(PerformDropEvent event) async {
+    if (Logger.isLoading) {
+      return;
+    }
     final reader = event.session.items.first.dataReader!;
     var progress = reader.getFile(Formats.plainTextFile, (file) async {
       final stream = (await file.getStream().toList()).expand((x) => x).toList();
       final fileLines = utf8.decode(stream).split('\n');
       if (mounted) {
-        _tryNavigate(context, fileLines);
+        _tryLoadFile(context, fileLines);
       }
     });
     if (progress != null) {
@@ -167,7 +183,7 @@ class _DropZoneState extends State<_DropZone> {
       final stream = await file.getStream().toList();
       final fileLines = _readZip(stream[0]);
       if (mounted) {
-        _tryNavigate(context, fileLines);
+        _tryLoadFile(context, fileLines);
       }
     });
     if (progress == null && mounted) {
@@ -194,12 +210,45 @@ Widget _upload = const Column(
   ],
 );
 
-void _tryNavigate(BuildContext context, List<String>? fileLines) {
-  if (fileLines == null || !Logger.parseLines(fileLines) || Logger.events.isEmpty) {
+const _textKey = 'text';
+const _portKey = 'sender';
+
+_parseData(Map data) {
+  final List<String> text = data[_textKey];
+  final SendPort sender = data[_portKey];
+  Parser().parse(text, sender);
+}
+
+void _tryLoadFile(BuildContext context, List<String>? fileLines) async {
+  if (fileLines == null) {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
     return;
   }
-  Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
+  Logger.isLoading = true;
+  final receivePort = ReceivePort();
+  await Isolate.spawn(_parseData, {
+    _textKey: fileLines,
+    _portKey: receivePort.sendPort});
+  receivePort.listen((data) {
+    if (data is int) {
+      _loadingProgress.value = data;
+    }
+    else if (data is Map) {
+      _loadingProgress.value = 0;
+      receivePort.close();
+      Logger.populateData(data);
+      Diagnostics.analyse();
+      Logger.isLoading = false;
+      if (context.mounted) {
+        if (Logger.events.isNotEmpty) {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
+        }
+        else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
+        }
+      }
+    }
+  });
 }
 
 Future<List<String>?> _loadFromFile(String path) async {
