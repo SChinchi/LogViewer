@@ -2,6 +2,11 @@
 
 A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://github.com/risk-of-thunder/BepInEx.GUI) does at runtime. Powered by [<img src="https://storage.googleapis.com/cms-storage-bucket/c823e53b3a1a7b0d36a9.png" alt="Flutter" width="50"/>](https://github.com/flutter/flutter)
 
+Available on:
+- Windows
+- Android
+- ~~Web~~ (coming soon)
+
 ## Features
 
 - Supports plain text and .zip files.
@@ -31,7 +36,5 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 ## How to build
 
 Follow the steps described in the Flutter [documentation](https://docs.flutter.dev/get-started/install) for your current environment.
-
-Do note the app is currently only tested on Windows and Android.
 
 Run `build_all.ps1` to generate release versions for any supported platforms which can be found in "build/binaries".
