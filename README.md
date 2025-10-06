@@ -17,6 +17,7 @@ Available on:
   - Custom list for generally problematic mods.
   - Long press for custom selection. It is recommended to use this way to add mods to any white-/blacklists.
   - Copy all filtered mods to clipboard.
+  - Create a profile code from the mods in the log.
 - A console UI with search and log level filters.
   - Long messages are collapsible. Configurable. 
   - Repeated events are bundled together for compression and to highlight potential error spam. Indicated with an orange number at the bottom right.
