@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 class Mod {
   String guid;
   late String fullName;
+  late Version version;
   late int index;
   bool isDeprecated = false;
   bool isOld = false;
@@ -10,9 +11,29 @@ class Mod {
   bool isSelected = false;
 
   Mod(this.guid) {
-    var pattern = RegExp(r'^(.*)-\d+.\d+.\d+');
+    var pattern = RegExp(r'^(.*)-(\d+).(\d+).(\d+)');
     var name = pattern.firstMatch(guid);
-    fullName = name != null ? name.group(1)! : guid;
+    if (name != null) {
+      fullName = name.group(1)!;
+      version = Version(name.group(2)!, name.group(3)!, name.group(4)!);
+    }
+    else {
+      fullName = guid;
+      version = Version('1', '0', '0');
+    }
+  }
+}
+
+class Version {
+  final String major;
+  final String minor;
+  final String patch;
+
+  Version(this.major, this.minor, this.patch);
+
+  @override
+  String toString() {
+    return '$major.$minor.$patch';
   }
 }
 

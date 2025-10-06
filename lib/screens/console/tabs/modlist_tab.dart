@@ -1,12 +1,17 @@
 import 'dart:collection';
+import 'dart:convert';
 
+import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 class ModListPage extends StatelessWidget {
@@ -38,7 +43,9 @@ class _ModListPageState extends State<ModListPageState> {
 
   @override
   Widget build(BuildContext context) {
-    final mods = context.watch<ModManager>().filteredMods;
+    final mods = context
+        .watch<ModManager>()
+        .filteredMods;
     return Column(
       children: [
         Container(
@@ -80,7 +87,8 @@ class _ModListPageState extends State<ModListPageState> {
                     Logger.modManager.category = value!;
                   },
                   dropdownMenuEntries: UnmodifiableListView(
-                    ModCategory.values.map((ModCategory cat) => DropdownMenuEntry(value: cat, label: cat.name)),
+                    ModCategory.values.map((ModCategory cat) =>
+                        DropdownMenuEntry(value: cat, label: cat.name)),
                   ),
                 ),
               ),
@@ -137,13 +145,63 @@ class _ModListPageState extends State<ModListPageState> {
                 _scrollController,
               ),
               Padding(
-                padding: const EdgeInsets.all(50),
-                child: FloatingActionButton(
-                  child: const Icon(Icons.copy),
-                  onPressed: () async {
-                    final text = Logger.modManager.filteredMods.map((m) => m.guid).join('\n');
-                    await Clipboard.setData(ClipboardData(text: text));
-                  },
+                padding: const EdgeInsets.all(40),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: FloatingActionButton(
+                        heroTag: 'profile',
+                        child: const Icon(Icons.account_circle_rounded),
+                        onPressed: () async {
+                          // TODO: Ensure network permissions are granted and catch any network errors
+                          final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}');
+                          stringBuffer.writeln('mods:');
+                          for (var mod in Logger.modManager.mods) {
+                            final version = mod.version;
+                            stringBuffer.writeln('  - name: ${mod.fullName}');
+                            stringBuffer.writeln('    version:');
+                            stringBuffer.writeln('      major: ${version.major}');
+                            stringBuffer.writeln('      minor: ${version.minor}');
+                            stringBuffer.writeln('      patch: ${version.patch}');
+                            stringBuffer.writeln('    enabled: true');
+                          }
+                          final tempDir = await getTemporaryDirectory();
+                          final fileStream = OutputFileStream(path.join(tempDir.path, Constants.exportFilename));
+                          final zipFile = ZipFileEncoder()
+                            ..createWithStream(fileStream)
+                            ..addArchiveFile(ArchiveFile.string('export.r2x', stringBuffer.toString()));
+                          await zipFile.close();
+
+                          final data = '#r2modman\n${base64Encode(fileStream.getBytes())}';
+                          final post = await http.post(
+                            Uri.parse('https://thunderstore.io/api/experimental/legacyprofile/create/'),
+                            headers: {
+                              'Content-Type': 'application/octet-stream',
+                            },
+                            body: data,
+                          );
+                          final message = post.statusCode == 200
+                              ? json.decode(post.body)['key']
+                              : 'Error: ${post.statusCode}';
+                          await Clipboard.setData(ClipboardData(text: message));
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: FloatingActionButton(
+                        heroTag: 'copy',
+                        child: const Icon(Icons.copy),
+                        onPressed: () async {
+                          final text = Logger.modManager.filteredMods.map((m) =>
+                          m.guid).join('\n');
+                          await Clipboard.setData(ClipboardData(text: text));
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

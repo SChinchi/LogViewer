@@ -47,4 +47,7 @@ class Constants {
   static const zipHeader = [80, 75, 3, 4];
 
   static const tempCopyFilename = 'message.txt';
+
+  static const modProfileName = 'Made with LogViewer';
+  static const exportFilename = 'export.zip';
 }
