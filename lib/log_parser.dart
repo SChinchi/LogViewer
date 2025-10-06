@@ -452,7 +452,7 @@ class Diagnostics {
         eventCopy.fullString = '$currentMod\n${eventCopy.fullString}';
         modsCrashingOnAwake.add(eventCopy);
       }
-      if (stuckLoadingPattern.firstMatch(event.fullString) != null) {
+      if (stuckLoadingPattern.firstMatch(event.fullString) != null && event.severity < 2) {
         stuckLoading.add(event);
       }
       if (flawedHookPattern.firstMatch(event.fullString) != null) {
