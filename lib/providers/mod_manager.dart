@@ -53,7 +53,9 @@ class ModManager with ChangeNotifier {
   final mods = <Mod>[];
   final filteredMods = <Mod>[];
   var isInSelectionMode = false;
-  final _nameToMod = <String, Mod>{};
+  // Some mods contain multiple plugins, which are loaded individually
+  // but refer to the same manifest name.
+  final _nameToMod = <String, List<Mod>>{};
 
   var _category = ModCategory.All;
   set category(ModCategory value)
@@ -115,11 +117,12 @@ class ModManager with ChangeNotifier {
       filteredMods.add(mod);
     }
     if (!_nameToMod.containsKey(mod.fullName)) {
-      _nameToMod[mod.fullName] = mod;
+      _nameToMod[mod.fullName] = [];
     }
+    _nameToMod[mod.fullName]!.add(mod);
   }
 
-  Mod? getMod(String name) {
+  List<Mod>? getModPlugins(String name) {
     return _nameToMod[name];
   }
 

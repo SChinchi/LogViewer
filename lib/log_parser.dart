@@ -364,20 +364,22 @@ class Logger {
           for (final tsMod in body) {
             final fullName = tsMod['full_name'];
             if (toUpdate.contains(fullName)) {
-              final mod = Logger.modManager.getMod(fullName);
-              if (mod != null) {
-                final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
-                mod.isDeprecated = !whitelisted && tsMod['is_deprecated'];
-                mod.isOld = !whitelisted
-                    && cutOffDate != null
-                    && DateTime
-                        .parse(tsMod['date_updated'])
-                        .difference(cutOffDate)
-                        .isNegative
-                    && !mod.isDeprecated;
-                mod.isProblematic = problematicModlist.contains(fullName);
+              final modPlugins = Logger.modManager.getModPlugins(fullName);
+              if (modPlugins != null) {
                 final latestVersion = tsMod['versions'].first['version_number'];
-                mod.isLatestVersion = mod.version.toString() == latestVersion;
+                for (final mod in modPlugins) {
+                  final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+                  mod.isDeprecated = !whitelisted && tsMod['is_deprecated'];
+                  mod.isOld = !whitelisted
+                      && cutOffDate != null
+                      && DateTime
+                          .parse(tsMod['date_updated'])
+                          .difference(cutOffDate)
+                          .isNegative
+                      && !mod.isDeprecated;
+                  mod.isProblematic = problematicModlist.contains(fullName);
+                  mod.isLatestVersion = mod.version.toString() == latestVersion;
+                }
                 final entry = Entry(
                   fullName: fullName,
                   dateTs: tsMod['date_updated'],
