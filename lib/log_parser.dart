@@ -69,14 +69,14 @@ class Event {
 }
 
 class Parser {
-  static final _eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
+  static final eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
 
   final summary = <Text>[];
   final mods = <Mod>[];
   final events = <Event>[];
 
   void _addEvent(String text) {
-    final match = _eventPattern.firstMatch(text);
+    final match = eventPattern.firstMatch(text);
     if (match == null) {
       return;
     }
@@ -131,7 +131,7 @@ class Parser {
       final total = lines.length;
       final sb = StringBuffer(lines[0]);
       for (final line in lines.sublist(1, lines.length)) {
-        final match = _eventPattern.firstMatch(line);
+        final match = eventPattern.firstMatch(line);
         if (match != null) {
           _addEvent(sb.toString().trimRight());
           sb.clear();
@@ -337,8 +337,11 @@ class Logger {
             && cutOffDate != null
             && DateTime.parse(entry.dateTs).difference(cutOffDate).isNegative
             && !mod.isDeprecated;
-        if (now.difference(DateTime.parse(entry.dateDb)).inHours > 1) {
+        if (now.difference(DateTime.parse(entry.dateDb)).inHours > 1 || entry.latestVersion == null) {
           toUpdate.add(mod.fullName);
+        }
+        else {
+          mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
         }
         mod.isProblematic = problematicModlist.contains(mod.fullName);
       }
@@ -348,6 +351,7 @@ class Logger {
     }
 
     if (toUpdate.isEmpty) {
+      Diagnostics.collectOutdatedMods();
       modManager.recalculateFilteredMods();
       return;
     }
@@ -372,11 +376,14 @@ class Logger {
                         .isNegative
                     && !mod.isDeprecated;
                 mod.isProblematic = problematicModlist.contains(fullName);
+                final latestVersion = tsMod['versions'].first['version_number'];
+                mod.isLatestVersion = mod.version.toString() == latestVersion;
                 final entry = Entry(
                   fullName: fullName,
                   dateTs: tsMod['date_updated'],
                   dateDb: now.toIso8601String(),
                   isDeprecated: tsMod['is_deprecated'] ? 1 : 0,
+                  latestVersion: latestVersion,
                 );
                 DB.insertMod(entry);
                 toUpdate.remove(fullName);
@@ -387,6 +394,7 @@ class Logger {
             }
           }
         }
+        Diagnostics.collectOutdatedMods();
         modManager.recalculateFilteredMods();
       })
     });
@@ -408,6 +416,7 @@ class Logger {
 }
 
 class Diagnostics {
+  static List<Event> outdatedMods = [];
   static List<Event> dependencyIssues = [];
   static List<Event> modsCrashingOnAwake = [];
   static List<Event> hookFails = [];
@@ -416,6 +425,7 @@ class Diagnostics {
   static List<Event> mostCommonRecurrentErrors = [];
 
   static void _reset() {
+    outdatedMods.clear();
     dependencyIssues.clear();
     modsCrashingOnAwake.clear();
     hookFails.clear();
@@ -473,5 +483,18 @@ class Diagnostics {
     }
     mostCommonRecurrentErrors.addAll(encounteredCommonErrors.values);
     mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
+  }
+
+  static void collectOutdatedMods() {
+    outdatedMods.clear();
+    final mods = Logger.modManager.mods
+        .where((mod) => !mod.isLatestVersion)
+        .map((mod) => mod.guid)
+        .join('\n');
+    if (mods.isNotEmpty) {
+      // We're faking the structure of an Event so we can initialise it as one.
+      final match = Parser.eventPattern.firstMatch('[${Constants.logSeverity[2]}:LogViewer] $mods');
+      outdatedMods.add(Event(mods, match!));
+    }
   }
 }

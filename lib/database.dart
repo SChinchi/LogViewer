@@ -22,17 +22,35 @@ class DB {
     //print('PATH: $v');
     database = openDatabase(
       join(await getDatabasesPath(), Constants.dbName),
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE ${Constants.tableName}('
-          '${Entry.fullNameKey} TEXT PRIMARY KEY,'
-          '${Entry.dateTsKey} TEXT,'
-          '${Entry.dateDbKey} TEXT,'
-          '${Entry.deprecatedKey} INTEGER)',
-        );
+      onCreate: (db, version) async {
+        for (int i = 0; i < version; i++) {
+          await _upgradeDatabase(db, i + 1);
+        }
       },
-      version: 1,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        for (int version = oldVersion; version < newVersion; version++) {
+          await _upgradeDatabase(db, version + 1);
+        }
+      },
+      version: Constants.dbVersion,
     );
+  }
+
+  static Future<void> _upgradeDatabase(Database db, int upgradeVersion) async {
+    switch (upgradeVersion) {
+      case 1:
+        await db.execute(
+          'CREATE TABLE ${Constants.tableName}('
+              '${Entry.fullNameKey} TEXT PRIMARY KEY,'
+              '${Entry.dateTsKey} TEXT,'
+              '${Entry.dateDbKey} TEXT,'
+              '${Entry.deprecatedKey} INTEGER)',
+        );
+        break;
+      case 2:
+        await db.execute('ALTER TABLE ${Constants.tableName} ADD ${Entry.latestVersionKey} TEXT');
+        break;
+    }
   }
 
   static Future<void> insertMod(Entry mod) async {
@@ -65,6 +83,7 @@ class DB {
           dateTs: kvp[Entry.dateTsKey] as String,
           dateDb: kvp[Entry.dateDbKey] as String,
           isDeprecated: kvp[Entry.deprecatedKey] as int,
+          latestVersion: kvp[Entry.latestVersionKey] as String?,
       );
     }
     return result;
@@ -76,16 +95,19 @@ class Entry {
   static const dateTsKey = 'date_ts';
   static const dateDbKey = 'date_db';
   static const deprecatedKey = 'deprecated';
+  static const latestVersionKey = 'latest_version';
   final String fullName;
   final String dateTs;
   final String dateDb;
   final int isDeprecated;
+  final String? latestVersion;
 
   Entry({
     required this.fullName,
     required this.dateTs,
     required this.dateDb,
     required this.isDeprecated,
+    required this.latestVersion,
   });
 
   Map<String, Object?> serialise() {
@@ -94,6 +116,7 @@ class Entry {
       dateTsKey: dateTs,
       dateDbKey: dateDb,
       deprecatedKey: isDeprecated,
+      latestVersionKey: latestVersion,
     };
   }
 }

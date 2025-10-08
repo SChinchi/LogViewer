@@ -27,6 +27,7 @@ Available on:
     - `range:start..end` filters for event indices. If either value is omitted, a default is used. Negative numbers count from the end of the list, e.g., `range:-5..` is the last 5 events.
   - Right click to copy selected event to clipboard. Long messages can be copied as a file instead. Configurable. 
 - A diagnostics tab that collects various issues that may highlight why a profile leads to errors.
+  - **Outdated Mods**: for mods not using the latest version on Thunderstore. Ignore if intentionally downpatching.
   - **Missing Dependencies & Incompatibilities**: for mods failing to load due to dependency issues.
   - **Mods Crashing On Awake**: errors with `BepInEx.Bootstrap.Chainloader:Start()`. Incomplete mod loading may lead to issues for other mods.
   - **Flawed Code Modifications**: errors about MMHOOK and Harmony patches. Signals broken mods or corrupted code state.

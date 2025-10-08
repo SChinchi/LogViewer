@@ -1,6 +1,7 @@
 class Constants {
   static const dbName = 'mods.db';
   static const tableName = 'mods';
+  static const dbVersion = 2;
 
   static const appTitle = 'BepInEx Log Viewer';
   static const titleTabSummary = 'Summary';
@@ -25,6 +26,7 @@ class Constants {
     'Info'
   ];
 
+  static const diagnosticsOutdated = 'Outdated Mods';
   static const diagnosticsDependencies = 'Missing Dependencies & Incompatibilities';
   static const diagnosticsCrashingMods = 'Mods Crashing On Awake';
   static const diagnosticsBadHooks = 'Flawed Code Modifications';

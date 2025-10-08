@@ -9,6 +9,7 @@ class Mod {
   bool isOld = false;
   bool isProblematic = false;
   bool isSelected = false;
+  bool isLatestVersion = true;
 
   Mod(this.guid) {
     var pattern = RegExp(r'^(.*)-(\d+).(\d+).(\d+)');
