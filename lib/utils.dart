@@ -1,10 +1,11 @@
 import 'dart:io';
 
 import 'package:auto_scrolling/auto_scrolling.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 Widget addMiddleScrollFunctionality(Scrollbar scrollbar, ScrollController controller) {
-  if (Platform.isAndroid || Platform.isIOS) {
+  if (Environment.isMobile) {
     return scrollbar;
   }
   return AutoScroll(
@@ -17,6 +18,12 @@ Widget addMiddleScrollFunctionality(Scrollbar scrollbar, ScrollController contro
   );
 }
 
-bool isMobilePlatform() {
-  return Platform.isAndroid || Platform.isIOS;
+class Environment {
+  static bool get isWeb => kIsWeb;
+  static bool get isWindows => !kIsWeb && Platform.isWindows;
+  static bool get isMacOS => !kIsWeb && Platform.isMacOS;
+  static bool get isLinux => !kIsWeb && Platform.isLinux;
+  static bool get isAndroid => !kIsWeb && Platform.isAndroid;
+  static bool get isIOS => !kIsWeb && Platform.isIOS;
+  static bool get isMobile => Environment.isAndroid || Environment.isIOS;
 }

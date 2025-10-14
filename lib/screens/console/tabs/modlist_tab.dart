@@ -167,8 +167,8 @@ class _ModListPageState extends State<ModListPageState> {
                             stringBuffer.writeln('      patch: ${version.patch}');
                             stringBuffer.writeln('    enabled: true');
                           }
-                          final tempDir = await getTemporaryDirectory();
-                          final fileStream = OutputFileStream(path.join(tempDir.path, Constants.exportFilename));
+                          final tempDir = Environment.isWeb ? '' : (await getTemporaryDirectory()).path;
+                          final fileStream = OutputFileStream(path.join(tempDir, Constants.exportFilename));
                           final zipFile = ZipFileEncoder()
                             ..createWithStream(fileStream)
                             ..addArchiveFile(ArchiveFile.string('export.r2x', stringBuffer.toString()));

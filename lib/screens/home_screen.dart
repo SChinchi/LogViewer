@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 import 'dart:math';
 
 import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:isolate_manager/isolate_manager.dart';
+import 'package:log_viewer/parser.dart';
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/main.dart';
@@ -32,9 +33,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (MyApp.args.isNotEmpty) {
-        final fileLines = await _loadFromFile(MyApp.args[0]);
+        final logText = await _loadFromFile(MyApp.args[0]);
         if (mounted) {
-          _tryLoadFile(context, fileLines);
+          _tryParseFile(context, logText);
         }
       }
     });
@@ -104,12 +105,14 @@ class _FilePickerState extends State<_FilePicker>{
         }
         result = await FilePicker.platform.pickFiles(allowMultiple: false);
         if (result != null) {
-          final fileLines = await _loadFromFile(result!.files[0].xFile.path);
-          if (isMobilePlatform()) {
+          final logText = Environment.isWeb
+            ? _loadFromBytes(result!.files.first.bytes!)
+            : await _loadFromFile(result!.files.first.xFile.path);
+          if (Environment.isMobile) {
             FilePicker.platform.clearTemporaryFiles();
           }
           if (context.mounted) {
-            _tryLoadFile(context, fileLines);
+            _tryParseFile(context, logText);
           }
         }
       },
@@ -171,9 +174,9 @@ class _DropZoneState extends State<_DropZone> {
     final reader = event.session.items.first.dataReader!;
     var progress = reader.getFile(Formats.plainTextFile, (file) async {
       final stream = (await file.getStream().toList()).expand((x) => x).toList();
-      final fileLines = utf8.decode(stream).split('\n');
+      final logText = utf8.decode(stream);
       if (mounted) {
-        _tryLoadFile(context, fileLines);
+        _tryParseFile(context, logText);
       }
     });
     if (progress != null) {
@@ -181,9 +184,9 @@ class _DropZoneState extends State<_DropZone> {
     }
     progress = reader.getFile(Formats.zip, (file) async {
       final stream = await file.getStream().toList();
-      final fileLines = _readZip(stream[0]);
+      final logText = _readZip(stream[0]);
       if (mounted) {
-        _tryLoadFile(context, fileLines);
+        _tryParseFile(context, logText);
       }
     });
     if (progress == null && mounted) {
@@ -210,65 +213,74 @@ Widget _upload = const Column(
   ],
 );
 
-const _textKey = 'text';
-const _portKey = 'sender';
-
-_parseData(Map data) {
-  final List<String> text = data[_textKey];
-  final SendPort sender = data[_portKey];
-  Parser().parse(text, sender);
-}
-
-void _tryLoadFile(BuildContext context, List<String>? fileLines) async {
-  if (fileLines == null) {
+void _tryParseFile(BuildContext context, String? text) async {
+  if (text == null) {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
     return;
   }
+
   Logger.isLoading = true;
-  final receivePort = ReceivePort();
-  await Isolate.spawn(_parseData, {
-    _textKey: fileLines,
-    _portKey: receivePort.sendPort});
-  receivePort.listen((data) {
-    if (data is int) {
-      _loadingProgress.value = data;
-    }
-    else if (data is Map) {
-      _loadingProgress.value = 0;
-      receivePort.close();
-      Logger.populateData(data);
-      Diagnostics.analyse();
-      Logger.isLoading = false;
-      if (context.mounted) {
-        if (Logger.events.isNotEmpty) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
+  final isolate = IsolateManager.createCustom(
+    parserTask,
+    workerName: 'parserTask',
+  );
+  final data = await isolate.compute(
+    text,
+    callback: (dynamic value) {
+      try {
+        final data = jsonDecode(value as String);
+        if (data.containsKey('progress')) {
+          _loadingProgress.value = data['progress'] as int;
+          return false; // Indicates this is a progress update, not the final result
         }
-        else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error decoding task message: $e');
         }
+        return true; // Stop listening
       }
+      return true; // Default to stop if format is unexpected
+    },
+  );
+  await isolate.stop();
+  _loadingProgress.value = 0;
+  Logger.populateData(jsonDecode(data));
+  Diagnostics.analyse();
+  Logger.isLoading = false;
+
+  if (context.mounted) {
+    if (Logger.events.isNotEmpty) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
     }
-  });
+    else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
+    }
+  }
 }
 
-Future<List<String>?> _loadFromFile(String path) async {
+Future<String?> _loadFromFile(String path) async {
   final file = File(path);
   if (!file.existsSync()) {
     return null;
   }
+  final bytes = await file.readAsBytes();
+  return _loadFromBytes(bytes.toList());
+}
+
+String? _loadFromBytes(List<int> bytes) {
   try {
-    final header = await file.openRead(0, 4).toList();
-    if (listEquals(header[0], Constants.zipHeader)) {
-      return _readZip(file.readAsBytesSync());
+    final header = bytes.getRange(0, 4).toList();
+    if (listEquals(header, Constants.zipHeader)) {
+      return _readZip(bytes);
     }
-    return file.readAsLinesSync();
+    return utf8.decode(bytes);
   }
   on Exception catch (_) {
     return null;
   }
 }
 
-List<String>? _readZip(List<int> bytes) {
+String? _readZip(List<int> bytes) {
   final zip = ZipDecoder().decodeBytes(bytes);
-  return zip.isNotEmpty ? utf8.decode(zip.first.content).split('\n') : null;
+  return zip.isNotEmpty ? utf8.decode(zip.first.content) : null;
 }

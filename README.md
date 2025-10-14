@@ -5,7 +5,7 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 Available on:
 - Windows
 - Android
-- ~~Web~~ (coming soon)
+- Web
 
 ## Features
 

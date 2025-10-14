@@ -49,12 +49,12 @@ class _ExpandableCardState extends State<ExpandableCard> {
               _tapEventOffset = detail.globalPosition;
             },
             onLongPress: () {
-              if (isMobilePlatform()) {
+              if (Environment.isMobile) {
                 _showDialog(context, event.fullString);
               }
             },
             onSecondaryTap: () {
-              if (!isMobilePlatform()) {
+              if (!Environment.isMobile) {
                 _showDialog(context, event.fullString);
               }
             },

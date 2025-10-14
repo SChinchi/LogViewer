@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,6 +7,7 @@ import 'package:http/http.dart' as http;
 
 import 'constants.dart';
 import 'database.dart';
+import 'parser.dart' as parser;
 import 'providers/mod_manager.dart';
 import 'settings.dart';
 import 'themes/themes.dart';
@@ -19,8 +19,6 @@ final _consoleSearchFilterPattens = [
 ];
 
 class Event {
-  static final _modPattern = RegExp(r'^TS Manifest: (.*)');
-
   late int severity;
   late String source;
   late String string;
@@ -33,25 +31,17 @@ class Event {
   String? modName;
 
   Event(String text, RegExpMatch match) {
-    severity = Constants.logSeverity.indexOf(match.group(2)!);
-    source = match.group(3)!;
-    string = match.group(4)!;
-    fullString = text;
-    fullStringNoPrefix = text.substring(match.group(1)!.length);
-    if (severity < 2) {
-      color = Colors.red;
-    }
-    else if (severity < 3) {
-      color = Colors.yellow;
-    }
-    else {
-      color = AppTheme.primaryColor;
-    }
-    lineCount = fullString.split('\n').length;
-    final modPattern = _modPattern.firstMatch(match.group(4)!);
-    if (modPattern != null) {
-      modName = modPattern.group(1);
-    }
+    final data = parser.Event(text, match);
+    severity = data.severity;
+    source = data.source;
+    string = data.string;
+    fullString = data.fullString;
+    fullStringNoPrefix = data.fullStringNoPrefix;
+    color = (data.color == null) ? color = AppTheme.primaryColor : Color(data.color!);
+    index = data.index;
+    lineCount = data.lineCount;
+    repeat = data.repeat;
+    modName = data.modName;
   }
 
   Event.clone(Event event) {
@@ -66,111 +56,19 @@ class Event {
     repeat = repeat;
     modName = event.modName;
   }
-}
 
-class Parser {
-  static final eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
-
-  final summary = <Text>[];
-  final mods = <Mod>[];
-  final events = <Event>[];
-
-  void _addEvent(String text) {
-    final match = eventPattern.firstMatch(text);
-    if (match == null) {
-      return;
-    }
-    // Compress repeated messages for the console
-    final sNoPrefix = text.substring(match.group(1)!.length);
-    if (events.isNotEmpty && events.last.fullStringNoPrefix == sNoPrefix) {
-      events.last.repeat++;
-      return;
-    }
-    final event = Event(text, match);
-    event.index = events.length;
-    events.add(event);
-    if (event.modName != null) {
-      mods.add(Mod(event.modName!));
-    }
-  }
-
-  void _createSummary() {
-    final bepInExLine = RegExp(r'^BepInEx \d+\.\d+\.\d+.\d+');
-    final unityLine = RegExp(r'^Running under Unity');
-    final patcherLine = RegExp(r'^Loaded \d+ patcher method from \[.*\]');
-    final pluginsLine = RegExp(r'^\d+ plugins to load$');
-    final wWiseLine = RegExp(r'^WwiseUnity: Setting Plugin DLL path to');
-    for (final event in events) {
-      final wWiseMatch = wWiseLine.firstMatch(event.string) != null;
-      final isLastSummaryLine = wWiseMatch;
-      if (isLastSummaryLine ||
-          bepInExLine.firstMatch(event.string) != null ||
-          unityLine.firstMatch(event.string) != null ||
-          patcherLine.firstMatch(event.string) != null ||
-          pluginsLine.firstMatch(event.string) != null) {
-        if (!wWiseMatch) {
-          summary.add(Text(event.string));
-        }
-        // Checking if the installed path is illegitimate to add it to the summary.
-        // Epic Games does allow any directory path so some rare false positives are expected.
-        else if (!event.string.contains('/steamapps/common/Risk') && !event.string.contains('/Epic Games/Risk')) {
-          summary.add(Text(event.string, style: const TextStyle(color: Colors.yellow)));
-        }
-      }
-      if (isLastSummaryLine) {
-        return;
-      }
-    }
-  }
-
-  void parse(List<String> lines, SendPort sender)
-  {
-    try {
-      var progress = 0;
-      var index = 0;
-      final total = lines.length;
-      final sb = StringBuffer(lines[0]);
-      for (final line in lines.sublist(1, lines.length)) {
-        final match = eventPattern.firstMatch(line);
-        if (match != null) {
-          _addEvent(sb.toString().trimRight());
-          sb.clear();
-        }
-        sb.writeln(line);
-        index += 1;
-        if (index % 5000 == 0) {
-          final currentProgress = (index / total * 100).toInt();
-          if (currentProgress != progress) {
-            progress = currentProgress;
-            sender.send(progress);
-          }
-        }
-      }
-      if (sb.isNotEmpty) {
-        _addEvent(sb.toString().trimRight());
-      }
-
-      // Prefix each message with its index; useful for range searching
-      final eventNum = events.length;
-      final length = eventNum.toString().length;
-      for (final event in events) {
-        event.fullString = '${event.index.toString().padLeft(length, '0')} ${event.fullString}';
-      }
-
-      _createSummary();
-
-      sender.send({
-        'success': true,
-        'summary': summary,
-        'mods': mods,
-        'events': events,
-      });
-    }
-    on Exception catch (_) {
-      sender.send({
-        'success': false
-      });
-    }
+  Event.fromJson(Map<String, dynamic> data) {
+    severity = data['severity'] as int;
+    source = data['source'];
+    string = data['string'];
+    fullString = data['fullString'];
+    fullStringNoPrefix = data['fullStringNoPrefix'];
+    final colorValue = data['color'] as int?;
+    color = (colorValue == null) ? color = AppTheme.primaryColor : Color(colorValue);
+    index = data['index'] as int;
+    lineCount = data['lineCount'] as int;
+    repeat = data['repeat'] as int;
+    modName = data['modName'];
   }
 }
 
@@ -408,11 +306,22 @@ class Logger {
       return;
     }
     for (final mod in data['mods']) {
-      Logger.modManager.add(mod);
+      Logger.modManager.add(Mod(mod));
     }
     getAllModsStatus();
-    Logger.summary.addAll(data['summary']);
-    Logger.events.addAll(data['events']);
+
+    for (final line in data['summary']) {
+      if (line.length == 1) {
+        // No colour information - use default
+        summary.add(Text(line[0] as String));
+      }
+      else {
+        summary.add(Text(line[0] as String, style: TextStyle(color: Color(line[1] as int))));
+      }
+    }
+    for (final event in data['events']) {
+      Logger.events.add(Event.fromJson(event));
+    }
     Logger._recalculateFilteredEvents();
   }
 }
@@ -495,7 +404,7 @@ class Diagnostics {
         .join('\n');
     if (mods.isNotEmpty) {
       // We're faking the structure of an Event so we can initialise it as one.
-      final match = Parser.eventPattern.firstMatch('[${Constants.logSeverity[2]}:LogViewer] $mods');
+      final match = parser.Parser.eventPattern.firstMatch('[${Constants.logSeverity[2]}:LogViewer] $mods');
       outdatedMods.add(Event(mods, match!));
     }
   }
