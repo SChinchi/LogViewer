@@ -180,7 +180,7 @@ class _DropZoneState extends State<_DropZone> {
     }
     final reader = event.session.items.first.dataReader!;
     var progress = reader.getFile(Formats.plainTextFile, (file) async {
-      final stream = (await file.getStream().toList()).expand((x) => x).toList();
+      final stream = await _readFullStream(file);
       final logText = utf8.decode(stream);
       if (mounted) {
         _tryParseFile(context, logText);
@@ -190,6 +190,8 @@ class _DropZoneState extends State<_DropZone> {
       return;
     }
     progress = reader.getFile(_zipExtended, (file) async {
+      final stream = await _readFullStream(file);
+      final logText = _readZip(stream);
       if (mounted) {
         _tryParseFile(context, logText);
       }
@@ -203,6 +205,10 @@ class _DropZoneState extends State<_DropZone> {
     setState(() {
       _isDragOver = false;
     });
+  }
+
+  Future<List<int>> _readFullStream(DataReaderFile file) async {
+    return (await file.getStream().toList()).expand((x) => x).toList();
   }
 }
 
