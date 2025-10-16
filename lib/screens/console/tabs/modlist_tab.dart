@@ -156,7 +156,7 @@ class _ModListPageState extends State<ModListPageState> {
                         child: const Icon(Icons.account_circle_rounded),
                         onPressed: () async {
                           // TODO: Ensure network permissions are granted and catch any network errors
-                          final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}');
+                          final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}\n');
                           stringBuffer.writeln('mods:');
                           for (var mod in Logger.modManager.mods) {
                             final version = mod.version;
