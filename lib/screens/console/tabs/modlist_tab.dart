@@ -10,8 +10,6 @@ import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 class ModListPage extends StatelessWidget {
@@ -167,12 +165,14 @@ class _ModListPageState extends State<ModListPageState> {
                             stringBuffer.writeln('      patch: ${version.patch}');
                             stringBuffer.writeln('    enabled: true');
                           }
-                          final tempDir = Environment.isWeb ? '' : (await getTemporaryDirectory()).path;
-                          final fileStream = OutputFileStream(path.join(tempDir, Constants.exportFilename));
+                          final fileHandle = RamFileHandle.asWritableRamBuffer();
+                          final fileStream = OutputFileStream.toRamFile(fileHandle);
                           final zipFile = ZipFileEncoder()
                             ..createWithStream(fileStream)
                             ..addArchiveFile(ArchiveFile.string('export.r2x', stringBuffer.toString()));
                           await zipFile.close();
+                          await fileHandle.close();
+                          await fileStream.close();
 
                           final data = '#r2modman\n${base64Encode(fileStream.getBytes())}';
                           final post = await http.post(
