@@ -13,6 +13,7 @@ import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/main.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
+import 'package:super_clipboard/super_clipboard.dart' show SimpleFileFormat, DataReaderFile;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import 'console/console_screen.dart';
@@ -127,6 +128,12 @@ class _DropZone extends StatefulWidget {
 }
 
 class _DropZoneState extends State<_DropZone> {
+  // Zip files on the web have a different mime type
+  static const _zipExtended = SimpleFileFormat(
+    uniformTypeIdentifiers: ['public.zip-archive'],
+    mimeTypes: ['application/zip', 'application/x-zip-compressed'],
+  );
+
   bool _isDragOver = false;
 
   @override
@@ -182,9 +189,7 @@ class _DropZoneState extends State<_DropZone> {
     if (progress != null) {
       return;
     }
-    progress = reader.getFile(Formats.zip, (file) async {
-      final stream = await file.getStream().toList();
-      final logText = _readZip(stream[0]);
+    progress = reader.getFile(_zipExtended, (file) async {
       if (mounted) {
         _tryParseFile(context, logText);
       }
