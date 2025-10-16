@@ -153,6 +153,12 @@ class _ModListPageState extends State<ModListPageState> {
                         heroTag: 'profile',
                         child: const Icon(Icons.account_circle_rounded),
                         onPressed: () async {
+                          if (Logger.modManager.mods.isEmpty) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.emptyModList)));
+                              return;
+                            }
+                          }
                           // TODO: Ensure network permissions are granted and catch any network errors
                           final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}\n');
                           stringBuffer.writeln('mods:');
