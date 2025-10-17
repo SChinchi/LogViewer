@@ -115,6 +115,7 @@ class _ExpandableContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxLines = Settings.getConsoleEventMaxLines();
     return ExpandableNotifier(
+      controller: event.controller,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(5, 3, 5, 3),
         child: Stack(

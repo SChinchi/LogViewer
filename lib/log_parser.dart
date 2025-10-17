@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -29,6 +30,7 @@ class Event {
   late int lineCount;
   int repeat = 0;
   String? modName;
+  final controller = ExpandableController();
 
   Event(String text, RegExpMatch match) {
     final data = parser.Event(text, match);
