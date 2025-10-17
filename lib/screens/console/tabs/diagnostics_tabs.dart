@@ -12,11 +12,16 @@ class DiagnosticsPage extends StatefulWidget {
   State<DiagnosticsPage> createState() => _DiagnosticsPageState();
 }
 
-class _DiagnosticsPageState extends State<DiagnosticsPage> with SingleTickerProviderStateMixin {
+class _DiagnosticsPageState extends State<DiagnosticsPage>
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController tabController;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final data = <ExpandableList>[];
     if (Diagnostics.outdatedMods.isNotEmpty) {
       data.add(ExpandableList(heading: Constants.diagnosticsOutdated, items: Diagnostics.outdatedMods));

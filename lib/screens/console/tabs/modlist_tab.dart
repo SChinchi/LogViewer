@@ -35,12 +35,16 @@ class ModListPageState extends StatefulWidget {
   State<ModListPageState> createState() => _ModListPageState();
 }
 
-class _ModListPageState extends State<ModListPageState> {
+class _ModListPageState extends State<ModListPageState> with AutomaticKeepAliveClientMixin {
   final _textController = TextEditingController(text: Logger.modManager.searchString);
   final _scrollController = ScrollController();
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final mods = context
         .watch<ModManager>()
         .filteredMods;

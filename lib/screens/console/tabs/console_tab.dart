@@ -24,7 +24,7 @@ class ConsolePageState extends StatefulWidget {
   State<ConsolePageState> createState() => _ConsolePageState();
 }
 
-class _ConsolePageState extends State<ConsolePageState> {
+class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveClientMixin {
   var _currentSliderValue = Logger.getSeverity().toDouble();
   var _status = Constants.logSeverity[Logger.getSeverity()];
   var _loggedEvents = Logger.filteredEvents;
@@ -32,7 +32,11 @@ class _ConsolePageState extends State<ConsolePageState> {
   final _textController = TextEditingController(text: Logger.getSearchString());
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Column(
       children: [
         Container(
