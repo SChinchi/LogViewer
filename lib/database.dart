@@ -11,7 +11,7 @@ import 'utils.dart';
 class DB {
   static late Future<Database> database;
 
-  static init() async {
+  static Future<void> init() async {
     WidgetsFlutterBinding.ensureInitialized();
     if (Environment.isWeb) {
       databaseFactoryOrNull = null;

@@ -19,7 +19,7 @@ class Settings {
   static late int _consoleEventMaxLines;
   static late int _textSizeCopyThreshold;
 
-  static init() async {
+  static Future<void> init() async {
     _prefs = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
     _useCutOffDate = _prefs.getBool(keyUseCutOffDate) ?? false;
     _cutOffDate = DateTime.tryParse(_prefs.getString(keyCutOffDate) ?? '');
@@ -29,7 +29,7 @@ class Settings {
     _textSizeCopyThreshold = _prefs.getInt(keyTextSizeCopyThreshold) ?? 2000;
   }
 
-  static setUseCutOffDate(bool value) async {
+  static Future<void> setUseCutOffDate(bool value) async {
     _useCutOffDate = value;
     await _prefs.setBool(keyUseCutOffDate, value);
     await Logger.getAllModsStatus();
@@ -37,7 +37,7 @@ class Settings {
 
   static bool getUseCutOffDate() => _useCutOffDate;
 
-  static setCutOffDate(DateTime? date) async {
+  static Future<void> setCutOffDate(DateTime? date) async {
     if (date != null) {
       _cutOffDate = date;
       await _prefs.setString(keyCutOffDate, date.toIso8601String());
@@ -55,7 +55,7 @@ class Settings {
     return 'N/A';
   }
 
-  static setDeprecatedAndOldWhitelist(List<String> items) async {
+  static Future<void> setDeprecatedAndOldWhitelist(List<String> items) async {
     if (!listEquals(_deprecatedAndOldWhitelist, items)) {
       _deprecatedAndOldWhitelist = items;
       await _prefs.setStringList(keyDeprecatedAndOldWhitelist, items);
@@ -65,7 +65,7 @@ class Settings {
 
   static List<String> getDeprecatedAndOldWhitelist() => _deprecatedAndOldWhitelist;
 
-  static setProblematicModlist(List<String> items) async {
+  static Future<void> setProblematicModlist(List<String> items) async {
     if (!listEquals(_problematicModlist, items)) {
       _problematicModlist = items;
       await _prefs.setStringList(keyProblematicModlist, items);
@@ -75,7 +75,7 @@ class Settings {
 
   static List<String> getProblematicModlist() => _problematicModlist;
 
-  static setConsoleEventMaxLines(int value) async {
+  static Future<void> setConsoleEventMaxLines(int value) async {
     if (value < 0) {
       value = 0;
     }
@@ -85,7 +85,7 @@ class Settings {
 
   static int getConsoleEventMaxLines() => _consoleEventMaxLines;
 
-  static setTextSizeCopyThreshold(int value) async {
+  static Future<void> setTextSizeCopyThreshold(int value) async {
     if (value < 0) {
       value = 0;
     }
