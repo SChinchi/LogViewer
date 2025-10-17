@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   file_picker: ^10.1.2
-  super_drag_and_drop: ^0.8.24
+  super_drag_and_drop: ^0.9.1
   http: ^1.2.2
   sqflite: ^2.4.1
   path: ^1.9.0
@@ -40,11 +40,12 @@ dependencies:
   provider: ^6.1.2
   archive: ^4.0.2
   expandable: ^5.0.1
-  super_clipboard: ^0.8.24
+  super_clipboard: ^0.9.1
   path_provider: ^2.1.5
   auto_scrolling: ^0.4.0
   sqflite_common_ffi_web: ^1.0.1+1
   isolate_manager: ^6.1.0
+  cupertino_icons: ^1.0.8
 
 
 dev_dependencies:
@@ -56,7 +57,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   isolate_manager_generator: ^0.2.0
 
 # For information on the generic Dart part of this file, see the
