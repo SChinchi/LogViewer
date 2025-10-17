@@ -49,7 +49,8 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
         return ExpansionTile(
           backgroundColor: Colors.white10,
           title: Text(data[index].heading),
-          children: data[index].items.map((item) =>
+          controller: data[index].items.controller,
+          children: data[index].items.events.map((item) =>
               ListTile(
                 title: ExpandableCard(event: item),
                 minVerticalPadding: 2,
@@ -63,7 +64,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
 
 class ExpandableList {
   final String heading;
-  final List<Event> items;
+  final CategoryItems items;
 
   ExpandableList({required this.heading, required this.items});
 }

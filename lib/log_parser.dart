@@ -329,22 +329,22 @@ class Logger {
 }
 
 class Diagnostics {
-  static List<Event> outdatedMods = [];
-  static List<Event> dependencyIssues = [];
-  static List<Event> modsCrashingOnAwake = [];
-  static List<Event> hookFails = [];
-  static List<Event> stuckLoading = [];
-  static List<Event> missingMemberExceptions = [];
-  static List<Event> mostCommonRecurrentErrors = [];
+  static CategoryItems outdatedMods = CategoryItems();
+  static CategoryItems dependencyIssues = CategoryItems();
+  static CategoryItems modsCrashingOnAwake = CategoryItems();
+  static CategoryItems hookFails = CategoryItems();
+  static CategoryItems stuckLoading = CategoryItems();
+  static CategoryItems missingMemberExceptions = CategoryItems();
+  static CategoryItems mostCommonRecurrentErrors = CategoryItems();
 
   static void _reset() {
-    outdatedMods.clear();
-    dependencyIssues.clear();
-    modsCrashingOnAwake.clear();
-    hookFails.clear();
-    stuckLoading.clear();
-    missingMemberExceptions.clear();
-    mostCommonRecurrentErrors.clear();
+    outdatedMods.reset();
+    dependencyIssues.reset();
+    modsCrashingOnAwake.reset();
+    hookFails.reset();
+    stuckLoading.reset();
+    missingMemberExceptions.reset();
+    mostCommonRecurrentErrors.reset();
   }
 
   static void analyse() {
@@ -394,8 +394,8 @@ class Diagnostics {
         }
       }
     }
-    mostCommonRecurrentErrors.addAll(encounteredCommonErrors.values);
-    mostCommonRecurrentErrors.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
+    mostCommonRecurrentErrors.events.addAll(encounteredCommonErrors.values);
+    mostCommonRecurrentErrors.events.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
   }
 
   static void collectOutdatedMods() {
@@ -409,5 +409,25 @@ class Diagnostics {
       final match = parser.Parser.eventPattern.firstMatch('[${Constants.logSeverity[2]}:LogViewer] $mods');
       outdatedMods.add(Event(mods, match!));
     }
+  }
+}
+
+class CategoryItems {
+  final events = <Event>[];
+  final controller = ExpansibleController();
+
+  bool get isNotEmpty => events.isNotEmpty;
+
+  void add(Event event) {
+    events.add(event);
+  }
+
+  void clear() {
+    events.clear();
+  }
+
+  void reset() {
+    events.clear();
+    controller.collapse();
   }
 }
