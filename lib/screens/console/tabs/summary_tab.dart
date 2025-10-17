@@ -17,9 +17,12 @@ class _SummaryPageState extends State<SummaryPage> with AutomaticKeepAliveClient
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return ListView.builder(
-      itemCount: Logger.summary.length,
-      itemBuilder: (context, index) => Logger.summary[index],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(5, 3, 5, 3),
+      child: ListView.builder(
+        itemCount: Logger.summary.length,
+        itemBuilder: (context, index) => Logger.summary[index],
+      ),
     );
   }
 }
