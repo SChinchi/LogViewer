@@ -134,6 +134,11 @@ class _DropZoneState extends State<_DropZone> {
     mimeTypes: ['application/zip', 'application/x-zip-compressed'],
   );
 
+  // .log files on the web are not considered plain text
+  static const _webDefault = SimpleFileFormat(
+    mimeTypes: ['application/octet-stream']
+  );
+
   bool _isDragOver = false;
 
   @override
@@ -196,6 +201,16 @@ class _DropZoneState extends State<_DropZone> {
         _tryParseFile(context, logText);
       }
     });
+    // TODO: Is there anything better for .log files on the web?
+    if (Environment.isWeb && progress == null) {
+      progress = reader.getFile(_webDefault, (file) async {
+        final stream = await _readFullStream(file);
+        final logText = utf8.decode(stream, allowMalformed: true);
+        if (mounted) {
+          _tryParseFile(context, logText);
+        }
+      });
+    }
     if (progress == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
     }
