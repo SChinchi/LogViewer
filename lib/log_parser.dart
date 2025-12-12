@@ -353,7 +353,8 @@ class Diagnostics {
     final incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');
     final skippingOlder = RegExp(r'Skipping \[.*\] because a newer version exists');
     final skippingInvalid = RegExp(r'Skipping \[.*\] because it has a dependency that was not loaded');
-    final chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:Start\(\)');
+    // Normally it appears as Chainloader:Start, but if it has been hooked Chainloader::Start
+    final chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:[:]?Start');
     final stuckLoadingPattern = RegExp(r'UnityEngine.SetupCoroutine.InvokeMoveNext');
     final flawedHookPattern = RegExp(r'(MonoMod\.RuntimeDetour\.(IL)?Hook\.\.ctor|HarmonyLib\.PatchClassProcessor\.Patch)');
     final missingPattern = RegExp(r'^Missing(Field|Method)Exception');
