@@ -355,7 +355,7 @@ class Diagnostics {
     final skippingInvalid = RegExp(r'Skipping \[.*\] because it has a dependency that was not loaded');
     // Normally it appears as Chainloader:Start, but if it has been hooked Chainloader::Start
     final chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:[:]?Start');
-    final stuckLoadingPattern = RegExp(r'UnityEngine.SetupCoroutine.InvokeMoveNext');
+    final stuckLoadingPattern = RegExp(r'RoR2Application.*UnityEngine.SetupCoroutine.InvokeMoveNext', dotAll: true);
     final flawedHookPattern = RegExp(r'(MonoMod\.RuntimeDetour\.(IL)?Hook\.\.ctor|HarmonyLib\.PatchClassProcessor\.Patch)');
     final missingPattern = RegExp(r'^Missing(Field|Method)Exception');
     final encounteredExceptions = <String>{};
