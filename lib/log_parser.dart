@@ -243,7 +243,7 @@ class Logger {
         else {
           mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
         }
-        mod.isProblematic = problematicModlist.contains(mod.fullName);
+        mod.isProblematic = problematicModlist.contains(mod.guid);
       }
       else {
         toUpdate.add(mod.fullName);

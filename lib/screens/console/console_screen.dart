@@ -75,16 +75,16 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
                 shadowColor: AppTheme.primaryColor,
                 onSelected: ((value) {
                   if (value == Constants.selectionOptions[0]) {
-                    Settings.setDeprecatedAndOldWhitelist(_addTo(Settings.getDeprecatedAndOldWhitelist()));
+                    Settings.setDeprecatedAndOldWhitelist(_addTo(Settings.getDeprecatedAndOldWhitelist(), false));
                   }
                   else if (value == Constants.selectionOptions[1]) {
-                    Settings.setDeprecatedAndOldWhitelist(_removeFrom(Settings.getDeprecatedAndOldWhitelist()));
+                    Settings.setDeprecatedAndOldWhitelist(_removeFrom(Settings.getDeprecatedAndOldWhitelist(), false));
                   }
                   else if (value == Constants.selectionOptions[2]) {
-                    Settings.setProblematicModlist(_addTo(Settings.getProblematicModlist()));
+                    Settings.setProblematicModlist(_addTo(Settings.getProblematicModlist(), true));
                   }
                   else {
-                    Settings.setProblematicModlist(_removeFrom(Settings.getProblematicModlist()));
+                    Settings.setProblematicModlist(_removeFrom(Settings.getProblematicModlist(), true));
                   }
                   Logger.modManager.clearSelections();
                 }),
@@ -131,11 +131,11 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
     );
   }
 
-  List<String> _addTo(List<String> items) {
+  List<String> _addTo(List<String> items, bool useGuid) {
     final set = items.toSet();
     for (final mod in Logger.modManager.mods) {
       if (mod.isSelected) {
-        set.add(mod.fullName);
+        set.add(useGuid ? mod.guid : mod.fullName);
       }
     }
     final newItems = set.toList();
@@ -143,11 +143,11 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
     return newItems;
   }
 
-  List<String> _removeFrom(List<String> items) {
+  List<String> _removeFrom(List<String> items, bool useGuid) {
     final set = items.toSet();
     for (final mod in Logger.modManager.mods) {
       if (mod.isSelected) {
-        set.remove(mod.fullName);
+        set.remove(useGuid ? mod.guid : mod.fullName);
       }
     }
     final newItems = set.toList();
