@@ -355,7 +355,11 @@ class Diagnostics {
     final skippingInvalid = RegExp(r'Skipping \[.*\] because it has a dependency that was not loaded');
     // Normally it appears as Chainloader:Start, but if it has been hooked Chainloader::Start
     final chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:[:]?Start');
-    final stuckLoadingPattern = RegExp(r'RoR2Application.*UnityEngine.SetupCoroutine.InvokeMoveNext', dotAll: true);
+    // The game loads its content in a coroutine, but we want to filter other irrelevant ones.
+    // Most errors are either related to the class that does the loading, RoR2Application, or
+    // coroutines launched by the SystemInitializerAttribute, for which BepInExPack conveniently
+    // appears in the stack trace.
+    final stuckLoadingPattern = RegExp(r'(RoR2Application|FixSystemInitializer).*UnityEngine.SetupCoroutine.InvokeMoveNext', dotAll: true);
     final flawedHookPattern = RegExp(r'(MonoMod\.RuntimeDetour\.(IL)?Hook\.\.ctor|HarmonyLib\.PatchClassProcessor\.Patch)');
     final missingPattern = RegExp(r'^Missing(Field|Method)Exception');
     final encounteredExceptions = <String>{};
