@@ -17,6 +17,8 @@ class Constants {
   static const buttonOk = 'OK';
   static const buttonCancel = 'Cancel';
 
+  static const noManifestModName = 'Unknown';
+
   static const logSeverity = [
     'Fatal',
     'Error',

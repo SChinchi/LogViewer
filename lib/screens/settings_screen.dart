@@ -13,6 +13,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  var _useModManifest = Settings.getUseModManifest();
   var _cutOffDateEnabled = Settings.getUseCutOffDate();
   final _whitelistTextController = TextEditingController();
   final _problematicTextController = TextEditingController();
@@ -63,6 +64,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsSection(
                     title: Constants.settingsSectionMods,
                     tiles: [
+                      ListTile(
+                        title: const Text('Use Mod Manifest'),
+                        trailing: Switch(
+                          value: _useModManifest,
+                          onChanged: (bool value) async {
+                            await Settings.setUseModManifest(value);
+                            setState(() {
+                              _useModManifest = value;
+                            });
+                          },
+                        ),
+                        onTap: () async {
+                          await Settings.setUseModManifest(!_useModManifest);
+                          setState(() {
+                            _useModManifest = !_useModManifest;
+                          });
+                        },
+                      ),
                       ListTile(
                         title: const Text('Use Old Date Threshold'),
                         trailing: Switch(

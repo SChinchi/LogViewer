@@ -117,7 +117,7 @@ class _ModListPageState extends State<ModListPageState> with AutomaticKeepAliveC
                           final mod = mods[index];
                           return GestureDetector(
                             child: Text(
-                              mod.guid,
+                              mod.name,
                               textAlign: TextAlign.left,
                               style: TextStyle(
                                 color: mod.isDeprecated ? Colors.red
@@ -170,13 +170,15 @@ class _ModListPageState extends State<ModListPageState> with AutomaticKeepAliveC
                             final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}\n');
                             stringBuffer.writeln('mods:');
                             for (var mod in Logger.modManager.mods) {
-                              final version = mod.version;
-                              stringBuffer.writeln('  - name: ${mod.fullName}');
-                              stringBuffer.writeln('    version:');
-                              stringBuffer.writeln('      major: ${version.major}');
-                              stringBuffer.writeln('      minor: ${version.minor}');
-                              stringBuffer.writeln('      patch: ${version.patch}');
-                              stringBuffer.writeln('    enabled: true');
+                              if (!mod.isMissingManifest) {
+                                final version = mod.version;
+                                stringBuffer.writeln('  - name: ${mod.fullName}');
+                                stringBuffer.writeln('    version:');
+                                stringBuffer.writeln('      major: ${version.major}');
+                                stringBuffer.writeln('      minor: ${version.minor}');
+                                stringBuffer.writeln('      patch: ${version.patch}');
+                                stringBuffer.writeln('    enabled: true');
+                              }
                             }
                             final fileHandle = RamFileHandle.asWritableRamBuffer();
                             final fileStream = OutputFileStream.toRamFile(fileHandle);
@@ -209,7 +211,7 @@ class _ModListPageState extends State<ModListPageState> with AutomaticKeepAliveC
                           child: const Icon(Icons.copy),
                           onPressed: () async {
                             final text = Logger.modManager.filteredMods.map((m) =>
-                            m.guid).join('\n');
+                            m.name).join('\n');
                             await Clipboard.setData(ClipboardData(text: text));
                           },
                         ),

@@ -15,7 +15,8 @@ final eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s
 // The reason for this is that this class cannot contain a Color reference,
 // so this is mainly used for parsing and the other for populating data.
 class Event {
-  static final _modPattern = RegExp(r'^TS Manifest: (.*)');
+  static final _tsModPattern = RegExp(r'^TS Manifest: (.*)');
+  static final _bepInModPattern = RegExp(r'^Loading \[(.*)\]');
 
   late int severity;
   late String source;
@@ -26,7 +27,11 @@ class Event {
   int index = 0;
   late int lineCount;
   int repeat = 0;
-  String? modName;
+  int? modIndex;
+
+  // These are not serialised directly and used for detecting when a mod loads
+  String? tsModName;
+  String? bepInModName;
 
   Event(String text, RegExpMatch match) {
     severity = Constants.logSeverity.indexOf(match.group(2)!);
@@ -41,9 +46,17 @@ class Event {
       color = _yellow;
     }
     lineCount = fullString.split('\n').length;
-    final modPattern = _modPattern.firstMatch(match.group(4)!);
-    if (modPattern != null) {
-      modName = modPattern.group(1);
+
+    // Check for loading mod pattern
+    if (source == 'BepInEx') {
+      final tsModPattern = _tsModPattern.firstMatch(match.group(4)!);
+      if (tsModPattern != null) {
+        tsModName = tsModPattern.group(1)!;
+      }
+      final bepInModPattern = _bepInModPattern.firstMatch(match.group(4)!);
+      if (bepInModPattern != null) {
+        bepInModName = bepInModPattern.group(1)!;
+      }
     }
   }
 
@@ -58,7 +71,7 @@ class Event {
       'index': index,
       'lineCount': lineCount,
       'repeat': repeat,
-      'modName': modName,
+      'modIndex': modIndex,
     };
   }
 }
@@ -67,7 +80,7 @@ class Parser {
   static final eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
 
   final summary = <List<dynamic>>[];
-  final mods = <String>[];
+  final mods = <List<String>>[];
   final events = <Event>[];
 
   void _addEvent(String text) {
@@ -81,11 +94,28 @@ class Parser {
       events.last.repeat++;
       return;
     }
+    final previousEvent = events.isNotEmpty ? events.last : null;
     final event = Event(text, match);
     event.index = events.length;
     events.add(event);
-    if (event.modName != null) {
-      mods.add(event.modName!);
+
+    // For loading mods the pattern we generally match is:
+    //   [Info : BepInEx] TS Manifest: <tsModName>
+    //   [Info : BepInEx] Loading [<bepInModName>]
+    // However, it is possible for either of these to be missing due to muted logs.
+    // The manifest one can also be missing if the mod has been installed manually,
+    // so we tag those as unknown accordingly.
+    if (previousEvent != null && previousEvent.tsModName != null) {
+      previousEvent.modIndex = mods.length;
+      if (event.bepInModName != null) {
+        event.modIndex = mods.length;
+        mods.add([previousEvent.tsModName!, event.bepInModName!]);
+      } else {
+        mods.add([previousEvent.tsModName!, '']);
+      }
+    } else if (event.bepInModName != null) {
+      event.modIndex = mods.length;
+      mods.add([Constants.noManifestModName, event.bepInModName!]);
     }
   }
 
@@ -126,6 +156,7 @@ class Parser {
       final sb = StringBuffer(lines[0]);
       for (final line in lines.sublist(1, lines.length)) {
         final match = eventPattern.firstMatch(line);
+        // If the new line begins a new log message, the buffer is complete with the previous one
         if (match != null) {
           _addEvent(sb.toString().trimRight());
           sb.clear();
@@ -140,6 +171,7 @@ class Parser {
           }
         }
       }
+      // End of file, flush last message in the buffer
       if (sb.isNotEmpty) {
         _addEvent(sb.toString().trimRight());
       }

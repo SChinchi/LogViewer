@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'log_parser.dart';
 
 class Settings {
+  static const keyUseModManifest = 'use_mod_manifest';
   static const keyUseCutOffDate = 'use_cut_off_date';
   static const keyCutOffDate = 'cut_off_date';
   static const keyDeprecatedAndOldWhitelist = 'deprecated_and_old_whitelist';
@@ -12,6 +13,7 @@ class Settings {
   static const keyTextSizeCopyThreshold = 'text_size_copy_threshold';
 
   static late SharedPreferencesWithCache _prefs;
+  static late bool _useModManifest;
   static late bool _useCutOffDate;
   static DateTime? _cutOffDate;
   static late List<String> _deprecatedAndOldWhitelist;
@@ -21,12 +23,20 @@ class Settings {
 
   static Future<void> init() async {
     _prefs = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
+    _useModManifest = _prefs.getBool(keyUseModManifest) ?? true;
     _useCutOffDate = _prefs.getBool(keyUseCutOffDate) ?? false;
     _cutOffDate = DateTime.tryParse(_prefs.getString(keyCutOffDate) ?? '');
     _deprecatedAndOldWhitelist = _prefs.getStringList(keyDeprecatedAndOldWhitelist) ?? [];
     _problematicModlist = _prefs.getStringList(keyProblematicModlist) ?? [];
     _consoleEventMaxLines = _prefs.getInt(keyConsoleEventMaxLines) ?? 7;
     _textSizeCopyThreshold = _prefs.getInt(keyTextSizeCopyThreshold) ?? 2000;
+  }
+
+  static bool getUseModManifest() => _useModManifest;
+
+  static Future<void> setUseModManifest(bool value) async {
+    _useModManifest = value;
+    await _prefs.setBool(keyUseModManifest, value);
   }
 
   static Future<void> setUseCutOffDate(bool value) async {

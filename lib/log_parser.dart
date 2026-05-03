@@ -29,7 +29,7 @@ class Event {
   late int index;
   late int lineCount;
   int repeat = 0;
-  String? modName;
+  int? modIndex;
   final controller = ExpandableController();
 
   Event(String text, RegExpMatch match) {
@@ -43,7 +43,7 @@ class Event {
     index = data.index;
     lineCount = data.lineCount;
     repeat = data.repeat;
-    modName = data.modName;
+    modIndex = data.modIndex;
   }
 
   Event.clone(Event event) {
@@ -56,7 +56,7 @@ class Event {
     index = event.index;
     lineCount = event.lineCount;
     repeat = repeat;
-    modName = event.modName;
+    modIndex = event.modIndex;
   }
 
   Event.fromJson(Map<String, dynamic> data) {
@@ -70,7 +70,17 @@ class Event {
     index = data['index'] as int;
     lineCount = data['lineCount'] as int;
     repeat = data['repeat'] as int;
-    modName = data['modName'];
+    modIndex = data['modIndex'] as int?;
+  }
+
+  String? get modName {
+    if (modIndex != null) {
+      final mods = Logger.modManager.mods;
+      if (modIndex! >= 0 && modIndex! < mods.length) {
+        return mods[modIndex!].name;
+      }
+    }
+    return null;
   }
 }
 
@@ -243,7 +253,7 @@ class Logger {
         else {
           mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
         }
-        mod.isProblematic = problematicModlist.contains(mod.guid);
+        mod.isProblematic = problematicModlist.contains(mod.fullName) || mod.isMissingManifest;
       }
       else {
         toUpdate.add(mod.fullName);
@@ -277,7 +287,7 @@ class Logger {
                           .difference(cutOffDate)
                           .isNegative
                       && !mod.isDeprecated;
-                  mod.isProblematic = problematicModlist.contains(fullName);
+                  mod.isProblematic = problematicModlist.contains(fullName) || mod.isMissingManifest;
                   mod.isLatestVersion = mod.version.toString() == latestVersion;
                 }
                 final entry = Entry(
@@ -307,9 +317,11 @@ class Logger {
     if (data['success'] != true) {
       return;
     }
-    for (final mod in data['mods']) {
-      Logger.modManager.add(Mod(mod));
+    for (final modData in data['mods']) {
+      final mod = List<String>.from(modData);
+      Logger.modManager.add(Mod(mod[0], mod[1]));
     }
+    Logger.modManager.updateAmbiguousMods();
     getAllModsStatus();
 
     for (final line in data['summary']) {

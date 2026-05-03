@@ -1,7 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:log_viewer/constants.dart';
+import 'package:log_viewer/settings.dart';
 
 class Mod {
-  String guid;
+  late String guid;
+  late String bepInName;
   late String fullName;
   late Version version;
   late int index;
@@ -10,8 +13,9 @@ class Mod {
   bool isProblematic = false;
   bool isSelected = false;
   bool isLatestVersion = true;
+  bool isUnique = true;
 
-  Mod(this.guid) {
+  Mod(this.guid, this.bepInName) {
     var pattern = RegExp(r'^(.*)-(\d+).(\d+).(\d+)');
     var name = pattern.firstMatch(guid);
     if (name != null) {
@@ -23,6 +27,15 @@ class Mod {
       version = Version('1', '0', '0');
     }
   }
+
+  String get name {
+    if (Settings.getUseModManifest()) {
+      return isUnique ? fullName : '$fullName [$bepInName]';
+    }
+    return bepInName;
+  }
+
+  bool get isMissingManifest => Settings.getUseModManifest() ? guid == Constants.noManifestModName : false;
 }
 
 class Version {
@@ -86,7 +99,7 @@ class ModManager with ChangeNotifier {
         || (_category == ModCategory.Deprecated && mod.isDeprecated)
         || (_category == ModCategory.Old && mod.isOld && !mod.isDeprecated)
         || (_category == ModCategory.Problematic && mod.isProblematic)) {
-      return _searchString.pattern.isEmpty || mod.guid.contains(_searchString);
+      return _searchString.pattern.isEmpty || mod.name.contains(_searchString);
     }
     return false;
   }
@@ -143,6 +156,16 @@ class ModManager with ChangeNotifier {
       }
       isInSelectionMode = false;
       notifyListeners();
+    }
+  }
+
+  void updateAmbiguousMods() {
+    for (final mod in mods) {
+      if (mod.isMissingManifest || _nameToMod[mod.fullName]!.length > 1) {
+        // Manual mods are not updated when we fetch Thunderstore data, so we do it... manually
+        mod.isProblematic = mod.isMissingManifest;
+        mod.isUnique = false;
+      }
     }
   }
 
