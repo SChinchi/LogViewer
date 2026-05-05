@@ -30,7 +30,7 @@ class Mod {
 
   String get name {
     if (Settings.getUseModManifest()) {
-      return isUnique ? fullName : '$fullName [$bepInName]';
+      return isUnique ? guid : '$guid [$bepInName]';
     }
     return bepInName;
   }
