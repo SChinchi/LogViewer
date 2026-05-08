@@ -24,8 +24,8 @@ class Constants {
     'Error',
     'Warning',
     'Message',
-    'Debug',
-    'Info'
+    'Info',
+    'Debug'
   ];
 
   static const diagnosticsOutdated = 'Outdated Mods';
