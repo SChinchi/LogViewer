@@ -363,8 +363,9 @@ class Diagnostics {
     _reset();
     final missingDependency = RegExp(r'^Could not load \[.*\] because it has missing dependencies:');
     final incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');
-    final skippingOlder = RegExp(r'Skipping \[.*\] because a newer version exists');
-    final skippingInvalid = RegExp(r'Skipping \[.*\] because it has a dependency that was not loaded');
+    final skippingOlder = RegExp(r'^Skipping \[.*\] because a newer version exists');
+    final skippingInvalid = RegExp(r'^Skipping \[.*\] because it has a dependency that was not loaded');
+    final errorLoading = RegExp(r'^Error loading \[.*\]');
     // Normally it appears as Chainloader:Start, but if it has been hooked Chainloader::Start
     final chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:[:]?Start');
     // The game loads its content in a coroutine, but we want to filter other irrelevant ones.
@@ -381,11 +382,14 @@ class Diagnostics {
       if (event.modName != null) {
         currentMod = event.modName!;
       }
-      if (missingDependency.firstMatch(event.string) != null
-          || incompatibleDependency.firstMatch(event.string) != null
-          || skippingOlder.firstMatch(event.string) != null
-          || skippingInvalid.firstMatch(event.string) != null) {
-        dependencyIssues.add(event);
+      if (event.source == 'BepInEx') {
+        if (missingDependency.firstMatch(event.string) != null
+            || incompatibleDependency.firstMatch(event.string) != null
+            || skippingOlder.firstMatch(event.string) != null
+            || skippingInvalid.firstMatch(event.string) != null
+            || errorLoading.firstMatch(event.string) != null) {
+          dependencyIssues.add(event);
+        }
       }
       if (chainLoaderPattern.firstMatch(event.fullString) != null) {
         final eventCopy = Event.clone(event);
