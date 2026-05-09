@@ -39,13 +39,20 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
 
   @override
   void initState() {
+    super.initState();
     tabController = TabController(length: 4, vsync: this);
     tabController.addListener(() {
       if (tabController.previousIndex == 1) {
         Logger.modManager.clearSelections();
       }
+      setState(() {});
     });
-    super.initState();
+  }
+
+  @override
+  void dispose() {
+    tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -55,6 +62,21 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
       appBar: AppBar(
         toolbarHeight: 35,
         actions: [
+          if (tabController.index == 2)
+            ...[
+              IconButton(
+                icon: const Icon(Icons.arrow_upward_rounded),
+                onPressed: () {
+                  scrollConsoleToTop();
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_downward_rounded),
+                onPressed: () {
+                  scrollConsoleToBottom();
+                },
+              ),
+            ],
           if (isInSelectionMode && tabController.index == 1)
             ...[
               IconButton(

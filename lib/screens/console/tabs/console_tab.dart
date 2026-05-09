@@ -26,6 +26,8 @@ class ConsolePageState extends StatefulWidget {
 }
 
 class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveClientMixin {
+  static _ConsolePageState? instance;
+
   var _currentSliderValue = Logger.getSeverity().toDouble();
   var _status = Constants.logSeverity[Logger.getSeverity()];
   var _loggedEvents = Logger.filteredEvents;
@@ -34,6 +36,18 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    instance = this;
+  }
+
+  @override
+  void dispose() {
+    instance = null;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,4 +131,22 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
       ],
     );
   }
+}
+
+void scrollConsoleToTop() {
+  final scrollController = _ConsolePageState.instance?._scrollController;
+  scrollController?.animateTo(
+    scrollController.position.minScrollExtent,
+    duration: Duration(seconds: 1),
+    curve: Curves.ease,
+  );
+}
+
+void scrollConsoleToBottom() {
+  final scrollController = _ConsolePageState.instance?._scrollController;
+  scrollController?.animateTo(
+    scrollController.position.maxScrollExtent,
+    duration: Duration(seconds: 1),
+    curve: Curves.ease,
+  );
 }
