@@ -46,6 +46,7 @@ dependencies:
   sqflite_common_ffi_web: ^1.0.1+1
   isolate_manager: ^6.1.0
   cupertino_icons: ^1.0.8
+  super_sliver_list: ^0.4.1
 
 
 dev_dependencies:

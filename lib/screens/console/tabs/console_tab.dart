@@ -5,6 +5,7 @@ import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
 import 'package:log_viewer/widgets/expandable_card.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 
 class ConsolePage extends StatelessWidget {
   final TabController tabController;
@@ -102,7 +103,7 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
               interactive: true,
               child: ScrollConfiguration(
                 behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                child: ListView.builder(
+                child: SuperListView.builder(
                   shrinkWrap: true,
                   controller: _scrollController,
                   itemCount: _loggedEvents.length,
