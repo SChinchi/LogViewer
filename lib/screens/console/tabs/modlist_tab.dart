@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
@@ -166,7 +167,6 @@ class _ModListPageState extends State<ModListPageState> with AutomaticKeepAliveC
                                 return;
                               }
                             }
-                            // TODO: Ensure network permissions are granted and catch any network errors
                             final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}\n');
                             stringBuffer.writeln('mods:');
                             for (var mod in Logger.modManager.mods) {
@@ -190,17 +190,24 @@ class _ModListPageState extends State<ModListPageState> with AutomaticKeepAliveC
                             await fileStream.close();
 
                             final data = '#r2modman\n${base64Encode(fileStream.getBytes())}';
-                            final post = await http.post(
-                              Uri.parse('https://thunderstore.io/api/experimental/legacyprofile/create/'),
-                              headers: {
-                                'Content-Type': 'application/octet-stream',
-                              },
-                              body: data,
-                            );
-                            final message = post.statusCode == 200
-                                ? json.decode(post.body)['key']
-                                : 'Error: ${post.statusCode}';
-                            await Clipboard.setData(ClipboardData(text: message));
+                            try {
+                              final post = await http.post(
+                                Uri.parse('https://thunderstore.io/api/experimental/legacyprofile/create/'),
+                                headers: {
+                                  'Content-Type': 'application/octet-stream',
+                                },
+                                body: data,
+                              );
+                              final message = post.statusCode == 200
+                                  ? json.decode(post.body)['key']
+                                  : 'Error: ${post.statusCode}';
+                              await Clipboard.setData(ClipboardData(text: message));
+                            } on SocketException {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text(Constants.noConnectionError)));
+                              }
+                            }
                           },
                         ),
                       ),

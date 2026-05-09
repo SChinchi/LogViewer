@@ -55,4 +55,6 @@ class Constants {
   static const modProfileName = 'Made with LogViewer';
   static const exportFilename = 'export.zip';
   static const emptyModList = 'Cannot create a profile code without a mod list.';
+
+  static const noConnectionError = 'No internet permission or connection with internet access.';
 }

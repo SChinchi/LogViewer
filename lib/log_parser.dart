@@ -253,7 +253,7 @@ class Logger {
         else {
           mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
         }
-        mod.isProblematic = problematicModlist.contains(mod.fullName) || mod.isMissingManifest;
+        mod.isProblematic = problematicModlist.contains(mod.guid) || mod.isMissingManifest;
       }
       else {
         toUpdate.add(mod.fullName);
@@ -266,7 +266,6 @@ class Logger {
       return;
     }
 
-    // TODO: Ensure network permissions are granted and catch any network errors
     return Future(() => {
       http.get(Uri.parse('https://thunderstore.io/api/v1/package/')).then((response) {
         if (response.statusCode == 200) {
@@ -287,7 +286,7 @@ class Logger {
                           .difference(cutOffDate)
                           .isNegative
                       && !mod.isDeprecated;
-                  mod.isProblematic = problematicModlist.contains(fullName) || mod.isMissingManifest;
+                  mod.isProblematic = problematicModlist.contains(mod.guid) || mod.isMissingManifest;
                   mod.isLatestVersion = mod.version.toString() == latestVersion;
                 }
                 final entry = Entry(
@@ -302,6 +301,32 @@ class Logger {
                 if (toUpdate.isEmpty) {
                   break;
                 }
+              }
+            }
+          }
+        }
+        Diagnostics.collectOutdatedMods();
+        modManager.recalculateFilteredMods();
+      },
+      onError: (e) {
+        // Fallback to assigning any old values we still have in the database
+        for (final fullName in toUpdate) {
+          final entry = query[fullName];
+          if (entry != null) {
+            final modPlugins = Logger.modManager.getModPlugins(fullName);
+            if (modPlugins != null) {
+              for (final mod in modPlugins) {
+                final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+                mod.isDeprecated = !whitelisted && entry.isDeprecated == 1;
+                mod.isOld = !whitelisted
+                    && cutOffDate != null
+                    && DateTime
+                        .parse(entry.dateTs)
+                        .difference(cutOffDate)
+                        .isNegative
+                    && !mod.isDeprecated;
+                mod.isProblematic = problematicModlist.contains(mod.guid) || mod.isMissingManifest;
+                mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
               }
             }
           }
