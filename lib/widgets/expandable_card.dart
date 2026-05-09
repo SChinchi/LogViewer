@@ -88,7 +88,13 @@ class _ExpandableCardState extends State<ExpandableCard> {
               await Clipboard.setData(ClipboardData(text: text));
               return;
             }
-            // TODO: Fix for Android
+            // TODO: Fix for Android and Web
+            if (Environment.isAndroid || Environment.isWeb) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.copyFileError)));
+              }
+              return;
+            }
             final clipboard = SystemClipboard.instance;
             if (clipboard == null) {
               return;

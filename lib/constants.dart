@@ -57,4 +57,7 @@ class Constants {
   static const emptyModList = 'Cannot create a profile code without a mod list.';
 
   static const noConnectionError = 'No internet permission or connection with internet access.';
+  static const profileCodeError = 'This platform does not currently support creating a profile code.';
+  static const copyFileError = 'This platform does not currently support copying to file. '
+    'Set the text size to 0 to copy the text directly.';
 }

@@ -160,12 +160,20 @@ class _ModListPageState extends State<ModListPageState> with AutomaticKeepAliveC
                           heroTag: 'profile',
                           child: const Icon(Icons.account_circle_rounded),
                           onPressed: () async {
+                            // TODO: Fix for Web
+                            if (Environment.isWeb) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text(Constants.profileCodeError)));
+                              }
+                              return;
+                            }
                             if (Logger.modManager.mods.isEmpty) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text(Constants.emptyModList)));
-                                return;
                               }
+                              return;
                             }
                             final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}\n');
                             stringBuffer.writeln('mods:');
