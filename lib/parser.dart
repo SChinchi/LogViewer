@@ -24,7 +24,7 @@ class Event {
   late String fullString;
   late String fullStringNoPrefix;
   int? color;
-  int index = 0;
+  int index = -1;
   late int lineCount;
   int repeat = 0;
   int? modIndex;

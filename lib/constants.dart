@@ -45,6 +45,9 @@ class Constants {
     'Remove from problematic list',
   ];
 
+  static const eventContextMenuCopy = 'Copy';
+  static const eventContextMenuGoto = 'Go to';
+
   static const settingsSectionMods = 'Mod list';
   static const settingsSectionConsole = 'Console';
 

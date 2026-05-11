@@ -14,23 +14,26 @@ class ConsolePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ConsolePageState();
+    return ConsolePageState(tabController: tabController);
   }
 }
 
 class ConsolePageState extends StatefulWidget {
-  const ConsolePageState({super.key});
+  final TabController tabController;
+
+  const ConsolePageState({super.key, required this.tabController});
 
   @override
   State<ConsolePageState> createState() => _ConsolePageState();
 }
 
 class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveClientMixin {
-  static _ConsolePageState? instance;
+  static _ConsolePageState? _instance;
 
   var _currentSliderValue = Logger.getSeverity().toDouble();
   var _status = Constants.logSeverity[Logger.getSeverity()];
   var _loggedEvents = Logger.filteredEvents;
+  final _listController = ListController();
   final _scrollController = ScrollController();
   final _textController = TextEditingController(text: Logger.getSearchString());
 
@@ -40,17 +43,21 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
   @override
   void initState() {
     super.initState();
-    instance = this;
+    _instance = this;
   }
 
   @override
   void dispose() {
-    instance = null;
+    _instance = null;
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // If we try to use goto from Diagnostics without ever visiting the
+    // Console tab, it will have never had a chance to build the view, so
+    // we need to ensure jumping to an index happens after the first build.
+    _tryGotoEventAfterBuild();
     super.build(context);
     return Column(
       children: [
@@ -119,9 +126,11 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
                 behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
                 child: SuperListView.builder(
                   shrinkWrap: true,
+                  listController: _listController,
                   controller: _scrollController,
                   itemCount: _loggedEvents.length,
-                  itemBuilder: (context, index) => ExpandableCard(event: _loggedEvents[index]),
+                  itemBuilder: (context, index) =>
+                      ExpandableCard(event: _loggedEvents[index], tabController: widget.tabController),
                 ),
               ),
             ),
@@ -131,10 +140,30 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
       ],
     );
   }
+
+  void _resetSearchFiltersAndGotoEvent() {
+    setState(() {
+      _textController.text = Logger.getSearchString();
+      _currentSliderValue = Logger.getSeverity().round().toDouble();
+      _loggedEvents = Logger.filteredEvents;
+    });
+  }
+
+  Future<void> _tryGotoEventAfterBuild() async {
+    await Future.delayed(Duration.zero);
+    if (Logger.hasValidEventTarget) {
+      final index = Logger.consumeEventTarget();
+      _listController.jumpToItem(
+        index: index,
+        scrollController: _scrollController,
+        alignment: 0.5,
+      );
+    }
+  }
 }
 
 void scrollConsoleToTop() {
-  final scrollController = _ConsolePageState.instance?._scrollController;
+  final scrollController = _ConsolePageState._instance?._scrollController;
   scrollController?.animateTo(
     scrollController.position.minScrollExtent,
     duration: Duration(seconds: 1),
@@ -143,10 +172,16 @@ void scrollConsoleToTop() {
 }
 
 void scrollConsoleToBottom() {
-  final scrollController = _ConsolePageState.instance?._scrollController;
+  final scrollController = _ConsolePageState._instance?._scrollController;
   scrollController?.animateTo(
     scrollController.position.maxScrollExtent,
     duration: Duration(seconds: 1),
     curve: Curves.ease,
   );
+}
+
+void jumpToConsoleEvent() {
+  if (Logger.hasValidEventTarget) {
+    _ConsolePageState._instance?._resetSearchFiltersAndGotoEvent();
+  }
 }

@@ -9,14 +9,16 @@ import 'package:path/path.dart' as path;
 
 import '../constants.dart';
 import '../log_parser.dart';
+import '../screens/console/tabs/console_tab.dart';
 import '../settings.dart';
 import '../themes/themes.dart';
 import '../utils.dart';
 
 class ExpandableCard extends StatefulWidget {
   final Event event;
+  final TabController tabController;
 
-  const ExpandableCard({super.key, required this.event});
+  const ExpandableCard({super.key, required this.event, required this.tabController});
 
   @override
   State<ExpandableCard> createState() => _ExpandableCardState();
@@ -27,11 +29,6 @@ class _ExpandableCardState extends State<ExpandableCard> {
 
   late RenderBox _renderBox;
   var _tapEventOffset = Offset.zero;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +78,7 @@ class _ExpandableCardState extends State<ExpandableCard> {
       menuPadding: EdgeInsets.zero,
       items: [
         PopupMenuItem(
-          child: const Text("Copy"),
+          child: const Text(Constants.eventContextMenuCopy),
           onTap: () async {
             final size = Settings.getTextSizeCopyThreshold();
             if (size <= 0 || text.length < size) {
@@ -107,6 +104,15 @@ class _ExpandableCardState extends State<ExpandableCard> {
             await clipboard.write([item]);
           },
         ),
+        if (widget.event.index >= 0)
+          PopupMenuItem(
+            child: const Text(Constants.eventContextMenuGoto),
+            onTap: () async {
+              widget.tabController.index = 2;
+              Logger.setEventTarget(widget.event.index);
+              jumpToConsoleEvent();
+            },
+          ),
       ],
     );
   }

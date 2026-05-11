@@ -102,6 +102,7 @@ class Logger {
   static var _eventStart = startIndex;
   static var _eventEnd = endIndex;
   static var _repeatThreshold = 0;
+  static var _eventIndexTarget = -1;
   static final filteredEvents = <Event>[];
   static late Future modStatusNetRequest;
   static var isLoading = false;
@@ -130,7 +131,10 @@ class Logger {
     filteredEvents.clear();
     modManager.reset();
     summary.clear();
+    _resetSearchData();
+  }
 
+  static void _resetSearchData() {
     _severity = Constants.logSeverity.length - 1;
     _searchString = '';
     _searchPattern = RegExp(_searchString, caseSensitive: false);
@@ -229,6 +233,23 @@ class Logger {
   static String getSearchString() {
     return _searchString;
   }
+
+  static void setEventTarget(int index) {
+    if (index >= 0 && index < events.length) {
+      _eventIndexTarget = index;
+      _resetSearchData();
+      filteredEvents.clear();
+      filteredEvents.addAll(events);
+    }
+  }
+
+  static int consumeEventTarget() {
+    final index = _eventIndexTarget;
+    _eventIndexTarget = -1;
+    return index;
+  }
+
+  static bool get hasValidEventTarget => _eventIndexTarget >= 0 && _eventIndexTarget < filteredEvents.length;
 
   static Future getAllModsStatus() async {
     await DB.init();

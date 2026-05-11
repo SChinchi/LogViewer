@@ -21,11 +21,13 @@ Available on:
 - A console UI with search and log level filters.
   - Long messages are collapsible. Configurable. 
   - Repeated events are bundled together for compression and to highlight potential error spam. Indicated with an orange number at the bottom right.
+  - Right click on event (also works from the diagnostics tab):
+    - Copy text to clipboard. Long messages can be copied as a file instead. Configurable.
+    - Go to event; resets all filters and centers screen around an event to see the local context.
   - The search supports regex. The following flags can further limit a search:
     - `exclude:term` or `exclude:(term|another|and with spaces)` filters events that contain any of the specified keywords. 
     - `repeat:N` filters for events that are repeated at least N times in a row.
     - `range:start..end` filters for event indices. If either value is omitted, a default is used. Negative numbers count from the end of the list, e.g., `range:-5..` is the last 5 events.
-  - Right click to copy selected event to clipboard. Long messages can be copied as a file instead. Configurable. 
 - A diagnostics tab that collects various issues that may highlight why a profile leads to errors.
   - **Outdated Mods**: for mods not using the latest version on Thunderstore. Ignore if intentionally downpatching.
   - **Missing Dependencies & Incompatibilities**: for mods failing to load due to dependency issues.

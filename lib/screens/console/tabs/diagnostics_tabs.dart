@@ -14,7 +14,6 @@ class DiagnosticsPage extends StatefulWidget {
 
 class _DiagnosticsPageState extends State<DiagnosticsPage>
     with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  late TabController tabController;
 
   @override
   bool get wantKeepAlive => true;
@@ -52,7 +51,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
           controller: data[index].items.controller,
           children: data[index].items.events.map((item) =>
               ListTile(
-                title: ExpandableCard(event: item),
+                title: ExpandableCard(event: item, tabController: widget.tabController),
                 minVerticalPadding: 2,
               )).toList(),
         );
