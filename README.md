@@ -35,7 +35,7 @@ Available on:
   - **Flawed Code Modifications**: errors about MMHOOK and Harmony patches. Signals broken mods or corrupted code state.
   - **Stuck Loading x%**: for errors that cause the game to hang on the loading screen. 
   - **Missing Member Exception**: for outdated mods that attempt to call missing code.
-  - **Most Repeated Errors**: events logged multiple times consecutively (most likely errors) sorted in descending order.
+  - **Most Repeated Errors**: error events logged multiple times consecutively sorted in descending order.
 
 ## How to build
 
