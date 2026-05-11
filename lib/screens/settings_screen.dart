@@ -28,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void initState() {
+    super.initState();
     final whitelist = Settings.getDeprecatedAndOldWhitelist();
     _whitelistOldText = whitelist.join('\n');
     _whitelistTextController.text = _whitelistOldText;
@@ -38,7 +39,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _problematicSubtitle = _countItems(problematic);
     _collapsibleThreshold = Settings.getConsoleEventMaxLines();
     _textSizeThreshold = Settings.getTextSizeCopyThreshold();
-    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _whitelistTextController.dispose();
+    _problematicTextController.dispose();
+    _collapsibleTextController.dispose();
+    _textSizeThresholdTextController.dispose();
+    super.dispose();
   }
 
   @override

@@ -44,6 +44,13 @@ class _ModListPageState extends State<ModListPageState> with AutomaticKeepAliveC
   bool get wantKeepAlive => true;
 
   @override
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
+  @override
   Widget build(BuildContext context) {
     super.build(context);
     final mods = context

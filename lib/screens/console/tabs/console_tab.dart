@@ -49,6 +49,9 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
   @override
   void dispose() {
     _instance = null;
+    _listController.dispose();
+    _scrollController.dispose();
+    _textController.dispose();
     super.dispose();
   }
 
