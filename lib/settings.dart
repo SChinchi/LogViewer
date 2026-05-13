@@ -40,6 +40,8 @@ class Settings {
     problematicModlist = ValueNotifier(_prefs.getStringList(keyProblematicModlist) ?? []);
     consoleEventMaxLines = ValueNotifier(_prefs.getInt(keyConsoleEventMaxLines) ?? 7);
     textSizeCopyThreshold = ValueNotifier(_prefs.getInt(keyTextSizeCopyThreshold) ?? 2000);
+
+    useModManifest.addListener(Diagnostics.rebuildModsCrashingOnAwake);
   }
 
   static Future<void> setUseModManifest(bool value) async {

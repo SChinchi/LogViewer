@@ -387,17 +387,19 @@ class Logger {
 }
 
 class Diagnostics {
-  static CategoryItems outdatedMods = CategoryItems();
-  static CategoryItems dependencyIssues = CategoryItems();
-  static CategoryItems modsCrashingOnAwake = CategoryItems();
-  static CategoryItems hookFails = CategoryItems();
-  static CategoryItems stuckLoading = CategoryItems();
-  static CategoryItems missingMemberExceptions = CategoryItems();
-  static CategoryItems mostCommonRecurrentErrors = CategoryItems();
+  static final CategoryItems outdatedMods = CategoryItems();
+  static final CategoryItems dependencyIssues = CategoryItems();
+  static final CategoryItems _modsCrashingOnAwake = CategoryItems();
+  static final CategoryItems modsCrashingOnAwake = CategoryItems();
+  static final CategoryItems hookFails = CategoryItems();
+  static final CategoryItems stuckLoading = CategoryItems();
+  static final CategoryItems missingMemberExceptions = CategoryItems();
+  static final CategoryItems mostCommonRecurrentErrors = CategoryItems();
 
   static void _reset() {
     outdatedMods.reset();
     dependencyIssues.reset();
+    _modsCrashingOnAwake.reset();
     modsCrashingOnAwake.reset();
     hookFails.reset();
     stuckLoading.reset();
@@ -423,10 +425,10 @@ class Diagnostics {
     final missingPattern = RegExp(r'^Missing(Field|Method)Exception');
     final encounteredExceptions = <String>{};
     final encounteredCommonErrors = <String, Event>{};
-    var currentMod = '';
+    var currentModIndex = 0;
     for (final event in Logger.events) {
-      if (event.modName != null) {
-        currentMod = event.modName!;
+      if (event.modIndex != null) {
+        currentModIndex = event.modIndex!;
       }
       if (event.source == 'BepInEx') {
         if (missingDependency.firstMatch(event.string) != null
@@ -439,8 +441,8 @@ class Diagnostics {
       }
       if (chainLoaderPattern.firstMatch(event.fullString) != null) {
         final eventCopy = Event.clone(event);
-        eventCopy.fullString = '$currentMod\n${eventCopy.fullString}';
-        modsCrashingOnAwake.add(eventCopy);
+        eventCopy.modIndex = currentModIndex;
+        _modsCrashingOnAwake.add(eventCopy);
       }
       if (stuckLoadingPattern.firstMatch(event.fullString) != null && event.severity < 2) {
         stuckLoading.add(event);
@@ -461,6 +463,7 @@ class Diagnostics {
         }
       }
     }
+    rebuildModsCrashingOnAwake();
     mostCommonRecurrentErrors.events.addAll(encounteredCommonErrors.values);
     mostCommonRecurrentErrors.events.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
   }
@@ -475,6 +478,15 @@ class Diagnostics {
       // We're faking the structure of an Event so we can initialise it as one.
       final match = parser.Parser.eventPattern.firstMatch('[${Constants.logSeverity[2]}:LogViewer] $mods');
       outdatedMods.add(Event(mods, match!));
+    }
+  }
+
+  static void rebuildModsCrashingOnAwake() {
+    modsCrashingOnAwake.clear();
+    for (final event in Diagnostics._modsCrashingOnAwake.events) {
+      final eventCopy = Event.clone(event);
+      eventCopy.fullString = '${event.modName}\n${eventCopy.fullString}';
+      modsCrashingOnAwake.add(eventCopy);
     }
   }
 }

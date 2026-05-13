@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/logger.dart';
+import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/widgets/expandable_card.dart';
 
 class DiagnosticsPage extends StatefulWidget {
@@ -17,6 +18,20 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    Settings.useModManifest.addListener(_onSettingChanged);
+  }
+
+  @override
+  void dispose() {
+    Settings.useModManifest.removeListener(_onSettingChanged);
+    super.dispose();
+  }
+
+  void _onSettingChanged() => setState(() { });
 
   @override
   Widget build(BuildContext context) {
