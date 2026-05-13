@@ -97,16 +97,16 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
                 shadowColor: AppTheme.primaryColor,
                 onSelected: ((value) {
                   if (value == Constants.selectionOptions[0]) {
-                    Settings.setDeprecatedAndOldWhitelist(_addTo(Settings.getDeprecatedAndOldWhitelist(), false));
+                    Settings.setDeprecatedAndOldWhitelist(_addTo(Settings.deprecatedAndOldWhitelist.value, false));
                   }
                   else if (value == Constants.selectionOptions[1]) {
-                    Settings.setDeprecatedAndOldWhitelist(_removeFrom(Settings.getDeprecatedAndOldWhitelist(), false));
+                    Settings.setDeprecatedAndOldWhitelist(_removeFrom(Settings.deprecatedAndOldWhitelist.value, false));
                   }
                   else if (value == Constants.selectionOptions[2]) {
-                    Settings.setProblematicModlist(_addTo(Settings.getProblematicModlist(), true));
+                    Settings.setProblematicModlist(_addTo(Settings.problematicModlist.value, true));
                   }
                   else {
-                    Settings.setProblematicModlist(_removeFrom(Settings.getProblematicModlist(), true));
+                    Settings.setProblematicModlist(_removeFrom(Settings.problematicModlist.value, true));
                   }
                   Logger.modManager.clearSelections();
                 }),

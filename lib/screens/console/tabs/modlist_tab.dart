@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/log_parser.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
+import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
 import 'package:provider/provider.dart';
@@ -44,11 +45,20 @@ class _ModListPageState extends State<ModListPageState> with AutomaticKeepAliveC
   bool get wantKeepAlive => true;
 
   @override
+  void initState() {
+    super.initState();
+    Settings.useModManifest.addListener(_onSettingChanged);
+  }
+
+  @override
   void dispose() {
+    Settings.useModManifest.removeListener(_onSettingChanged);
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
+
+  void _onSettingChanged() => setState(() { });
   
   @override
   Widget build(BuildContext context) {

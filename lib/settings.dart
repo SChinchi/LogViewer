@@ -12,96 +12,92 @@ class Settings {
   static const keyConsoleEventMaxLines = 'console_event_max_lines';
   static const keyTextSizeCopyThreshold = 'text_size_copy_threshold';
 
-  static late SharedPreferencesWithCache _prefs;
-  static late bool _useModManifest;
-  static late bool _useCutOffDate;
-  static DateTime? _cutOffDate;
-  static late List<String> _deprecatedAndOldWhitelist;
-  static late List<String> _problematicModlist;
-  static late int _consoleEventMaxLines;
-  static late int _textSizeCopyThreshold;
+  static late final SharedPreferencesWithCache _prefs;
+  static late final ValueNotifier<bool> useModManifest;
+  static late final ValueNotifier<bool> useCutOffDate;
+  static late final ValueNotifier<DateTime?> cutOffDate;
+  static late final ValueNotifier<List<String>> deprecatedAndOldWhitelist;
+  static late final ValueNotifier<List<String>> problematicModlist;
+  static late final ValueNotifier<int> consoleEventMaxLines;
+  static late final ValueNotifier<int> textSizeCopyThreshold;
 
-  static Future<void> init() async {
-    _prefs = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
-    _useModManifest = _prefs.getBool(keyUseModManifest) ?? true;
-    _useCutOffDate = _prefs.getBool(keyUseCutOffDate) ?? false;
-    _cutOffDate = DateTime.tryParse(_prefs.getString(keyCutOffDate) ?? '');
-    _deprecatedAndOldWhitelist = _prefs.getStringList(keyDeprecatedAndOldWhitelist) ?? [];
-    _problematicModlist = _prefs.getStringList(keyProblematicModlist) ?? [];
-    _consoleEventMaxLines = _prefs.getInt(keyConsoleEventMaxLines) ?? 7;
-    _textSizeCopyThreshold = _prefs.getInt(keyTextSizeCopyThreshold) ?? 2000;
-  }
+  static DateTime? get cutOffDateEffective => useCutOffDate.value ? cutOffDate.value : null;
 
-  static bool getUseModManifest() => _useModManifest;
-
-  static Future<void> setUseModManifest(bool value) async {
-    _useModManifest = value;
-    await _prefs.setBool(keyUseModManifest, value);
-  }
-
-  static Future<void> setUseCutOffDate(bool value) async {
-    _useCutOffDate = value;
-    await _prefs.setBool(keyUseCutOffDate, value);
-    await Logger.getAllModsStatus();
-  }
-
-  static bool getUseCutOffDate() => _useCutOffDate;
-
-  static Future<void> setCutOffDate(DateTime? date) async {
-    if (date != null) {
-      _cutOffDate = date;
-      await _prefs.setString(keyCutOffDate, date.toIso8601String());
-      await Logger.getAllModsStatus();
-    }
-  }
-
-  static DateTime? getCutOffDate() => _useCutOffDate ? _cutOffDate : null;
-
-  static String getCutOffDateString() {
-    if (_cutOffDate != null) {
-      final d = _cutOffDate!;
+  static String get cutOffDateString {
+    if (cutOffDate.value != null) {
+      final d = cutOffDate.value!;
       return '${d.year.toString()}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
     }
     return 'N/A';
   }
 
+  static Future<void> init() async {
+    _prefs = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
+    useModManifest = ValueNotifier(_prefs.getBool(keyUseModManifest) ?? true);
+    useCutOffDate = ValueNotifier(_prefs.getBool(keyUseCutOffDate) ?? false);
+    cutOffDate = ValueNotifier(DateTime.tryParse(_prefs.getString(keyCutOffDate) ?? ''));
+    deprecatedAndOldWhitelist = ValueNotifier(_prefs.getStringList(keyDeprecatedAndOldWhitelist) ?? []);
+    problematicModlist = ValueNotifier(_prefs.getStringList(keyProblematicModlist) ?? []);
+    consoleEventMaxLines = ValueNotifier(_prefs.getInt(keyConsoleEventMaxLines) ?? 7);
+    textSizeCopyThreshold = ValueNotifier(_prefs.getInt(keyTextSizeCopyThreshold) ?? 2000);
+  }
+
+  static Future<void> setUseModManifest(bool value) async {
+    if (useModManifest.value != value) {
+      useModManifest.value = value;
+      await _prefs.setBool(keyUseModManifest, value);
+    }
+  }
+
+  static Future<void> setUseCutOffDate(bool value) async {
+    if (useCutOffDate.value != value) {
+      useCutOffDate.value = value;
+      await _prefs.setBool(keyUseCutOffDate, value);
+      await Logger.getAllModsStatus();
+    }
+  }
+
+  static Future<void> setCutOffDate(DateTime? date) async {
+    if (date != null) {
+      cutOffDate.value = date;
+      await _prefs.setString(keyCutOffDate, date.toIso8601String());
+      await Logger.getAllModsStatus();
+    }
+  }
+
   static Future<void> setDeprecatedAndOldWhitelist(List<String> items) async {
-    if (!listEquals(_deprecatedAndOldWhitelist, items)) {
-      _deprecatedAndOldWhitelist = items;
+    if (!listEquals(deprecatedAndOldWhitelist.value, items)) {
+      deprecatedAndOldWhitelist.value = items;
       await _prefs.setStringList(keyDeprecatedAndOldWhitelist, items);
       await Logger.getAllModsStatus();
     }
   }
 
-  static List<String> getDeprecatedAndOldWhitelist() => _deprecatedAndOldWhitelist;
-
   static Future<void> setProblematicModlist(List<String> items) async {
-    if (!listEquals(_problematicModlist, items)) {
-      _problematicModlist = items;
+    if (!listEquals(problematicModlist.value, items)) {
+      problematicModlist.value = items;
       await _prefs.setStringList(keyProblematicModlist, items);
       await Logger.getAllModsStatus();
     }
   }
 
-  static List<String> getProblematicModlist() => _problematicModlist;
-
   static Future<void> setConsoleEventMaxLines(int value) async {
     if (value < 0) {
       value = 0;
     }
-    _consoleEventMaxLines = value;
-    await _prefs.setInt(keyConsoleEventMaxLines, value);
+    if (consoleEventMaxLines.value != value) {
+      consoleEventMaxLines.value = value;
+      await _prefs.setInt(keyConsoleEventMaxLines, value);
+    }
   }
-
-  static int getConsoleEventMaxLines() => _consoleEventMaxLines;
 
   static Future<void> setTextSizeCopyThreshold(int value) async {
     if (value < 0) {
       value = 0;
     }
-    _textSizeCopyThreshold = value;
-    await _prefs.setInt(keyTextSizeCopyThreshold, value);
+    if (textSizeCopyThreshold.value != value) {
+      textSizeCopyThreshold.value = value;
+      await _prefs.setInt(keyTextSizeCopyThreshold, value);
+    }
   }
-
-  static int getTextSizeCopyThreshold() => _textSizeCopyThreshold;
 }

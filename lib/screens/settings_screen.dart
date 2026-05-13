@@ -13,8 +13,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  var _useModManifest = Settings.getUseModManifest();
-  var _cutOffDateEnabled = Settings.getUseCutOffDate();
+  var _useModManifest = Settings.useModManifest.value;
+  var _cutOffDateEnabled = Settings.useCutOffDate.value;
   final _whitelistTextController = TextEditingController();
   final _problematicTextController = TextEditingController();
   final _collapsibleTextController = TextEditingController();
@@ -29,16 +29,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    final whitelist = Settings.getDeprecatedAndOldWhitelist();
+    final whitelist = Settings.deprecatedAndOldWhitelist.value;
     _whitelistOldText = whitelist.join('\n');
     _whitelistTextController.text = _whitelistOldText;
     _whitelistSubtitle = _countItems(whitelist);
-    final problematic = Settings.getProblematicModlist();
+    final problematic = Settings.problematicModlist.value;
     _problematicOldText = problematic.join('\n');
     _problematicTextController.text = _problematicOldText;
     _problematicSubtitle = _countItems(problematic);
-    _collapsibleThreshold = Settings.getConsoleEventMaxLines();
-    _textSizeThreshold = Settings.getTextSizeCopyThreshold();
+    _collapsibleThreshold = Settings.consoleEventMaxLines.value;
+    _textSizeThreshold = Settings.textSizeCopyThreshold.value;
   }
 
   @override
@@ -111,14 +111,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       ListTile(
                         title: const Text('Set Old Mods Date'),
-                        subtitle: Text(Settings.getCutOffDateString()),
+                        subtitle: Text(Settings.cutOffDateString),
                         enabled: _cutOffDateEnabled,
                         onTap: () async {
                           final date = await showDatePicker(
                             context: context,
                             firstDate: DateTime(2019),
                             lastDate: DateTime.now(),
-                            currentDate: Settings.getCutOffDate() ?? DateTime.now(),
+                            currentDate: Settings.cutOffDateEffective ?? DateTime.now(),
                           );
                           await Settings.setCutOffDate(date);
                           setState(() {

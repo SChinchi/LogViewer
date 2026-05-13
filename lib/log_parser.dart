@@ -256,9 +256,9 @@ class Logger {
     final query = await DB.allMods();
     final toUpdate = <String>{};
     final now = DateTime.now();
-    final cutOffDate = Settings.getCutOffDate();
-    final deprecatedAndOldWhitelist = Settings.getDeprecatedAndOldWhitelist();
-    final problematicModlist = Settings.getProblematicModlist();
+    final cutOffDate = Settings.cutOffDateEffective;
+    final deprecatedAndOldWhitelist = Settings.deprecatedAndOldWhitelist.value;
+    final problematicModlist = Settings.problematicModlist.value;
     for (final mod in Logger.modManager.mods) {
       final entry = query[mod.fullName];
       if (entry != null) {

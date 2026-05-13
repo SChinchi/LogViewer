@@ -29,13 +29,13 @@ class Mod {
   }
 
   String get name {
-    if (Settings.getUseModManifest()) {
+    if (Settings.useModManifest.value) {
       return isUnique ? guid : '$guid [$bepInName]';
     }
     return bepInName;
   }
 
-  bool get isMissingManifest => Settings.getUseModManifest() ? guid == Constants.noManifestModName : false;
+  bool get isMissingManifest => Settings.useModManifest.value ? guid == Constants.noManifestModName : false;
 }
 
 class Version {

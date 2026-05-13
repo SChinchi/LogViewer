@@ -31,6 +31,20 @@ class _ExpandableCardState extends State<ExpandableCard> {
   var _tapEventOffset = Offset.zero;
 
   @override
+  void initState() {
+    super.initState();
+    Settings.consoleEventMaxLines.addListener(_onSettingChanged);
+  }
+
+  @override
+  void dispose() {
+    Settings.consoleEventMaxLines.removeListener(_onSettingChanged);
+    super.dispose();
+  }
+
+  void _onSettingChanged() => setState(() { });
+
+  @override
   Widget build(BuildContext context) {
     final event = widget.event;
     _renderBox = Overlay.of(context).context.findRenderObject() as RenderBox;
@@ -80,7 +94,7 @@ class _ExpandableCardState extends State<ExpandableCard> {
         PopupMenuItem(
           child: const Text(Constants.eventContextMenuCopy),
           onTap: () async {
-            final size = Settings.getTextSizeCopyThreshold();
+            final size = Settings.textSizeCopyThreshold.value;
             if (size <= 0 || text.length < size) {
               await Clipboard.setData(ClipboardData(text: text));
               return;
@@ -125,7 +139,7 @@ class _ExpandableContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxLines = Settings.getConsoleEventMaxLines();
+    final maxLines = Settings.consoleEventMaxLines.value;
     return ExpandableNotifier(
       controller: event.controller,
       child: Padding(
