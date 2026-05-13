@@ -11,7 +11,7 @@ const int _yellow = 0xFFFFEB3B;
 
 final eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
 
-// This is almost a mirror image of the Event class in log_parser.
+// This is almost a mirror image of the Event class in logger.
 // The reason for this is that this class cannot contain a Color reference,
 // so this is mainly used for parsing and the other for populating data.
 class Event {

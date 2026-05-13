@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'log_parser.dart';
+import 'logger.dart';
 
 class Settings {
   static const keyUseModManifest = 'use_mod_manifest';

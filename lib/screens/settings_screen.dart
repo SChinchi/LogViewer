@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:log_viewer/constants.dart';
-import 'package:log_viewer/log_parser.dart';
+import 'package:log_viewer/logger.dart';
 import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/themes/themes.dart';
 

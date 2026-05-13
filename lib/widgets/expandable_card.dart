@@ -8,7 +8,7 @@ import 'package:super_clipboard/super_clipboard.dart';
 import 'package:path/path.dart' as path;
 
 import '../constants.dart';
-import '../log_parser.dart';
+import '../logger.dart';
 import '../screens/console/tabs/console_tab.dart';
 import '../settings.dart';
 import '../themes/themes.dart';

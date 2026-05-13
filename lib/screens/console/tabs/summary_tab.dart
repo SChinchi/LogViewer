@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:log_viewer/log_parser.dart';
+import 'package:log_viewer/logger.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:provider/provider.dart';
 
