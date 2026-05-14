@@ -204,8 +204,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ListTile(
                           title: const Text('Collapsible Console Line Threshold'),
                           subtitle: Text(_collapsibleThreshold > 0 ? _collapsibleThreshold.toString() : 'None'),
-                          onTap: () {
-                            showDialog(
+                          onTap: () async {
+                            final error = await showDialog(
                               context: context,
                               barrierDismissible: false,
                               builder: (BuildContext context) {
@@ -213,35 +213,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   title: 'Set Limit (0 for None)',
                                   textController: _collapsibleTextController,
                                   onFieldSubmitted: (value) {
-                                    setState(() {
-                                      _collapsibleThreshold = int.parse(_collapsibleTextController.text);
+                                    if (_collapsibleTextController.text.isEmpty) {
+                                      Navigator.pop(context);
+                                      return;
+                                    }
+                                    try {
+                                      setState(() {
+                                        _collapsibleThreshold = int.parse(_collapsibleTextController.text);
+                                        _collapsibleTextController.text = '';
+                                        Settings.setConsoleEventMaxLines(_collapsibleThreshold);
+                                      });
+                                      Navigator.pop(context);
+                                    } on FormatException catch (e) {
                                       _collapsibleTextController.text = '';
-                                      Settings.setConsoleEventMaxLines(_collapsibleThreshold);
-                                    });
-                                    Navigator.pop(context);
+                                      Navigator.pop(context, e.message);
+                                    }
                                   },
                                   onTapCancel: () {
                                     _collapsibleTextController.text = '';
                                     Navigator.pop(context);
                                   },
                                   onTapOK: () {
-                                    setState(() {
-                                      _collapsibleThreshold = int.parse(_collapsibleTextController.text);
+                                    if (_collapsibleTextController.text.isEmpty) {
+                                      Navigator.pop(context);
+                                      return;
+                                    }
+                                    try {
+                                      setState(() {
+                                        _collapsibleThreshold = int.parse(_collapsibleTextController.text);
+                                        _collapsibleTextController.text = '';
+                                        Settings.setConsoleEventMaxLines(_collapsibleThreshold);
+                                      });
+                                      Navigator.pop(context);
+                                    } on FormatException catch (e) {
                                       _collapsibleTextController.text = '';
-                                      Settings.setConsoleEventMaxLines(_collapsibleThreshold);
-                                    });
-                                    Navigator.pop(context);
+                                      Navigator.pop(context, e.message);
+                                    }
                                   },
                                 );
                               },
                             );
+                            if (error != null) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error as String)));
+                              }
+                            }
                           },
                         ),
                         ListTile(
                           title: const Text('Copy To File If Text Longer Than'),
                           subtitle: Text(_textSizeThreshold > 0 ? _textSizeThreshold.toString() : 'None'),
-                          onTap: () {
-                            showDialog(
+                          onTap: () async {
+                            final error = await showDialog(
                               context: context,
                               barrierDismissible: false,
                               builder: (BuildContext context) {
@@ -249,28 +272,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   title: 'Set Threshold (0 for None)',
                                   textController: _textSizeThresholdTextController,
                                   onFieldSubmitted: (value) {
-                                    setState(() {
-                                      _textSizeThreshold = int.parse(_textSizeThresholdTextController.text);
+                                    if (value.isEmpty) {
+                                      Navigator.pop(context);
+                                      return;
+                                    }
+                                    try {
+                                      setState(() {
+                                        _textSizeThreshold = int.parse(_textSizeThresholdTextController.text);
+                                        _textSizeThresholdTextController.text = '';
+                                        Settings.setTextSizeCopyThreshold(_textSizeThreshold);
+                                      });
+                                      Navigator.pop(context);
+                                    } on FormatException catch (e) {
                                       _textSizeThresholdTextController.text = '';
-                                      Settings.setTextSizeCopyThreshold(_textSizeThreshold);
-                                    });
-                                    Navigator.pop(context);
+                                      Navigator.pop(context, e.message);
+                                    }
                                   },
                                   onTapCancel: () {
                                     _textSizeThresholdTextController.text = '';
                                     Navigator.pop(context);
                                   },
                                   onTapOK: () {
-                                    setState(() {
-                                      _textSizeThreshold = int.parse(_textSizeThresholdTextController.text);
+                                    if (_textSizeThresholdTextController.text.isEmpty) {
+                                      Navigator.pop(context);
+                                      return;
+                                    }
+                                    try {
+                                      setState(() {
+                                        _textSizeThreshold = int.parse(_textSizeThresholdTextController.text);
+                                        _textSizeThresholdTextController.text = '';
+                                        Settings.setTextSizeCopyThreshold(_textSizeThreshold);
+                                      });
+                                      Navigator.pop(context);
+                                    } on FormatException catch (e) {
                                       _textSizeThresholdTextController.text = '';
-                                      Settings.setTextSizeCopyThreshold(_textSizeThreshold);
-                                    });
-                                    Navigator.pop(context);
+                                      Navigator.pop(context, e.message);
+                                    }
                                   },
                                 );
                               },
                             );
+                            if (error != null) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error as String)));
+                              }
+                            }
                           },
                         ),
                       ],
