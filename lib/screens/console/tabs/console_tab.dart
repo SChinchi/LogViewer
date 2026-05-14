@@ -3,38 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/logger.dart';
 import 'package:log_viewer/themes/themes.dart';
-import 'package:log_viewer/utils.dart';
+import 'package:log_viewer/widgets/advanced_scrollable.dart';
 import 'package:log_viewer/widgets/expandable_card.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
-class ConsolePage extends StatelessWidget {
+class ConsolePage extends StatefulWidget {
   final TabController tabController;
+  final FocusNode focusNode;
 
-  const ConsolePage({super.key, required this.tabController});
+  const ConsolePage({super.key, required this.tabController, required this.focusNode});
 
   @override
-  Widget build(BuildContext context) {
-    return ConsolePageState(tabController: tabController);
-  }
+  State<ConsolePage> createState() => _ConsolePageState();
 }
 
-class ConsolePageState extends StatefulWidget {
-  final TabController tabController;
-
-  const ConsolePageState({super.key, required this.tabController});
-
-  @override
-  State<ConsolePageState> createState() => _ConsolePageState();
-}
-
-class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveClientMixin {
+class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClientMixin {
   static _ConsolePageState? _instance;
 
   var _currentSliderValue = Logger.getSeverity().toDouble();
   var _status = Constants.logSeverity[Logger.getSeverity()];
   var _loggedEvents = Logger.filteredEvents;
+  final _textFocusNode = FocusNode(debugLabel: 'console-search');
   final _listController = ListController();
-  final _scrollController = ScrollController();
+  final _scrollController = ScrollController(debugLabel: 'console');
   final _textController = TextEditingController(text: Logger.getSearchString());
 
   @override
@@ -49,6 +40,7 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
   @override
   void dispose() {
     _instance = null;
+    _textFocusNode.dispose();
     _listController.dispose();
     _scrollController.dispose();
     _textController.dispose();
@@ -75,6 +67,7 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
                 height: 70,
                 width: 200,
                 child: TextField(
+                  focusNode: _textFocusNode,
                   controller: _textController,
                   style: TextStyle(color: AppTheme.primaryColor, fontSize: 12),
                   decoration: const InputDecoration(
@@ -120,24 +113,18 @@ class _ConsolePageState extends State<ConsolePageState> with AutomaticKeepAliveC
           ),
         ),
         Expanded(
-          child: addMiddleScrollFunctionality(
-            Scrollbar(
+          child: AdvancedScrollable(
+            controller: _scrollController,
+            mainFocusNode: widget.focusNode,
+            otherFocusNodes: [_textFocusNode],
+            child: SuperListView.builder(
+              shrinkWrap: true,
+              listController: _listController,
               controller: _scrollController,
-              thumbVisibility: true,
-              interactive: true,
-              child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                child: SuperListView.builder(
-                  shrinkWrap: true,
-                  listController: _listController,
-                  controller: _scrollController,
-                  itemCount: _loggedEvents.length,
-                  itemBuilder: (context, index) =>
-                      ExpandableCard(event: _loggedEvents[index], tabController: widget.tabController),
-                ),
-              ),
+              itemCount: _loggedEvents.length,
+              itemBuilder: (context, index) =>
+                  ExpandableCard(event: _loggedEvents[index], tabController: widget.tabController),
             ),
-            _scrollController,
           ),
         ),
       ],

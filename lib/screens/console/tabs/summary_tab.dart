@@ -1,34 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:log_viewer/logger.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
+import 'package:log_viewer/widgets/advanced_scrollable.dart';
 import 'package:provider/provider.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 
-class SummaryPage extends StatelessWidget {
+class SummaryPage extends StatefulWidget {
   final TabController tabController;
+  final FocusNode focusNode;
 
-  const SummaryPage({super.key, required this.tabController});
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => Logger.modManager),
-      ],
-      child: const SummaryPageState(),
-    );
-  }
-}
-
-class SummaryPageState extends StatefulWidget {
-  const SummaryPageState({super.key});
+  const SummaryPage({super.key, required this.tabController, required this.focusNode});
 
   @override
-  State<SummaryPageState> createState() => _SummaryPageState();
+  State<SummaryPage> createState() => _SummaryPageState();
 }
 
-class _SummaryPageState extends State<SummaryPageState> with AutomaticKeepAliveClientMixin{
+class _SummaryPageState extends State<SummaryPage> with AutomaticKeepAliveClientMixin {
+  final _scrollController = ScrollController(debugLabel: 'summary');
+
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,11 +38,19 @@ class _SummaryPageState extends State<SummaryPageState> with AutomaticKeepAliveC
     if (modIssues != null) {
       summary.add(modIssues);
     }
-    return Container(
-      padding: const EdgeInsets.fromLTRB(5, 3, 5, 3),
-      child: ListView.builder(
-        itemCount: summary.length,
-        itemBuilder: (context, index) => summary[index],
+    return Provider(
+      create: (_) => Logger.modManager,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(5, 3, 5, 3),
+        child: AdvancedScrollable(
+          controller: _scrollController,
+          mainFocusNode: widget.focusNode,
+          child: SuperListView.builder(
+            controller: _scrollController,
+            itemCount: summary.length,
+            itemBuilder: (context, index) => summary[index],
+          ),
+        ),
       ),
     );
   }

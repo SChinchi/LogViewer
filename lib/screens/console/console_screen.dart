@@ -35,23 +35,40 @@ class ConsoleScreenState extends StatefulWidget {
 }
 
 class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerProviderStateMixin {
-  late TabController tabController;
+  late final TabController _tabController;
+  final _summaryFocusNode = FocusNode(debugLabel: 'summary-main');
+  final _modlistFocusNode = FocusNode(debugLabel: 'modlist-main');
+  final _consoleFocusNode = FocusNode(debugLabel: 'console-main');
+  final _diagnosticsFocusNode = FocusNode(debugLabel: 'diagnostics-main');
+  late final _allFocusNodes = [_summaryFocusNode, _modlistFocusNode, _consoleFocusNode, _diagnosticsFocusNode];
+  var _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    tabController = TabController(length: 4, vsync: this);
-    tabController.addListener(() {
-      if (tabController.previousIndex == 1) {
-        Logger.modManager.clearSelections();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        if (_tabController.previousIndex == 1) {
+          Logger.modManager.clearSelections();
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _allFocusNodes[_currentIndex].requestFocus();
+        });
+        setState(() {
+          _currentIndex = _tabController.index;
+        });
       }
-      setState(() {});
     });
   }
 
   @override
   void dispose() {
-    tabController.dispose();
+    _tabController.dispose();
+    _summaryFocusNode.dispose();
+    _modlistFocusNode.dispose();
+    _consoleFocusNode.dispose();
+    _diagnosticsFocusNode.dispose();
     super.dispose();
   }
 
@@ -62,7 +79,7 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
       appBar: AppBar(
         toolbarHeight: 35,
         actions: [
-          if (tabController.index == 2)
+          if (_tabController.index == 2)
             ...[
               IconButton(
                 icon: const Icon(Icons.arrow_upward_rounded),
@@ -77,7 +94,7 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
                 },
               ),
             ],
-          if (isInSelectionMode && tabController.index == 1)
+          if (isInSelectionMode && _tabController.index == 1)
             ...[
               IconButton(
                 icon: const Icon(Icons.cancel),
@@ -132,7 +149,7 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
             )
         ],
         bottom: TabBar(
-          controller: tabController,
+          controller: _tabController,
           tabs: const [
             Tab(text: Constants.titleTabSummary),
             Tab(text: Constants.titleTabMods),
@@ -142,12 +159,12 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
         ),
       ),
       body: TabBarView(
-        controller: tabController,
+        controller: _tabController,
         children: [
-          SummaryPage(tabController: tabController),
-          ModListPage(tabController: tabController),
-          ConsolePage(tabController: tabController),
-          DiagnosticsPage(tabController: tabController),
+          SummaryPage(tabController: _tabController, focusNode: _summaryFocusNode),
+          ModListPage(tabController: _tabController, focusNode: _modlistFocusNode),
+          ConsolePage(tabController: _tabController, focusNode: _consoleFocusNode),
+          DiagnosticsPage(tabController: _tabController, focusNode: _diagnosticsFocusNode),
         ],
       ),
     );
