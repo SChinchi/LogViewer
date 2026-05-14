@@ -152,24 +152,6 @@ class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClient
   }
 }
 
-void scrollConsoleToTop() {
-  final scrollController = _ConsolePageState._instance?._scrollController;
-  scrollController?.animateTo(
-    scrollController.position.minScrollExtent,
-    duration: Duration(seconds: 1),
-    curve: Curves.ease,
-  );
-}
-
-void scrollConsoleToBottom() {
-  final scrollController = _ConsolePageState._instance?._scrollController;
-  scrollController?.animateTo(
-    scrollController.position.maxScrollExtent,
-    duration: Duration(seconds: 1),
-    curve: Curves.ease,
-  );
-}
-
 void jumpToConsoleEvent() {
   if (Logger.hasValidEventTarget) {
     _ConsolePageState._instance?._resetSearchFiltersAndGotoEvent();

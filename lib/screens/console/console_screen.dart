@@ -79,21 +79,6 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
       appBar: AppBar(
         toolbarHeight: 35,
         actions: [
-          if (_tabController.index == 2)
-            ...[
-              IconButton(
-                icon: const Icon(Icons.arrow_upward_rounded),
-                onPressed: () {
-                  scrollConsoleToTop();
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_downward_rounded),
-                onPressed: () {
-                  scrollConsoleToBottom();
-                },
-              ),
-            ],
           if (isInSelectionMode && _tabController.index == 1)
             ...[
               IconButton(
