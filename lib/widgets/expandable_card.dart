@@ -17,15 +17,31 @@ import '../utils.dart';
 class ExpandableCard extends StatefulWidget {
   final Event event;
   final TabController tabController;
+  final bool highlight;
 
-  const ExpandableCard({super.key, required this.event, required this.tabController});
+  const ExpandableCard({
+    super.key,
+    required this.event,
+    required this.tabController,
+    this.highlight = false,
+  });
 
   @override
   State<ExpandableCard> createState() => _ExpandableCardState();
 }
 
-class _ExpandableCardState extends State<ExpandableCard> {
+class _ExpandableCardState extends State<ExpandableCard> with SingleTickerProviderStateMixin {
   _ExpandableCardState();
+
+  late final _animationController = AnimationController(
+    vsync: this,
+    duration: Duration(milliseconds: 1000),
+  )..reverse();
+  late final Animation<Decoration> _animationDecoration = _animationController
+      .drive(CurveTween(curve: Curves.easeInOut))
+      .drive(DecorationTween(begin: const BoxDecoration(), end: BoxDecoration(color: AppTheme.selectedColor))
+  );
+  var _animationDisposed = false;
 
   late RenderBox _renderBox;
   var _tapEventOffset = Offset.zero;
@@ -34,21 +50,43 @@ class _ExpandableCardState extends State<ExpandableCard> {
   void initState() {
     super.initState();
     Settings.consoleEventMaxLines.addListener(_onSettingChanged);
+    _animationDecoration.addStatusListener(_onAnimationDecorationStatusChanged);
   }
 
   @override
   void dispose() {
     Settings.consoleEventMaxLines.removeListener(_onSettingChanged);
+    _animationDecoration.removeStatusListener(_onAnimationDecorationStatusChanged);
+    _animationController.dispose();
+    _animationDisposed = true;
     super.dispose();
   }
 
-  void _onSettingChanged() => setState(() { });
+  void _onSettingChanged() => setState(() {});
+
+  void _onAnimationDecorationStatusChanged(AnimationStatus status) async {
+    if (status == AnimationStatus.completed) {
+      if (!_animationDisposed) {
+        await _animationController.reverse();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final shouldHighlight = widget.highlight && Logger.hasValidEventTarget;
+    if (shouldHighlight) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_animationDisposed) {
+          _animationController.reverse();
+          _animationController.forward();
+        }
+        Logger.resetEventTarget();
+      });
+    }
     final event = widget.event;
     _renderBox = Overlay.of(context).context.findRenderObject() as RenderBox;
-    return Stack(
+    final child = Stack(
       children: [
         Card(
           child: GestureDetector(
@@ -82,6 +120,13 @@ class _ExpandableCardState extends State<ExpandableCard> {
           ),
       ],
     );
+    if (shouldHighlight) {
+      return DecoratedBoxTransition(
+        decoration: _animationDecoration,
+        child: child,
+      );
+    }
+    return child;
   }
 
   void _showDialog(BuildContext context, String text) async {

@@ -49,11 +49,20 @@ class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClient
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // If we try to use goto from Diagnostics without ever visiting the
     // Console tab, it will have never had a chance to build the view, so
     // we need to ensure jumping to an index happens after the first build.
-    _tryGotoEventAfterBuild();
-    super.build(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Logger.hasValidEventTarget) {
+        final index = Logger.eventTarget;
+        _listController.jumpToItem(
+          index: index,
+          scrollController: _scrollController,
+          alignment: 0.5,
+        );
+      }
+    });
     return Column(
       children: [
         Container(
@@ -122,8 +131,13 @@ class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClient
               listController: _listController,
               controller: _scrollController,
               itemCount: _loggedEvents.length,
-              itemBuilder: (context, index) =>
-                  ExpandableCard(event: _loggedEvents[index], tabController: widget.tabController),
+              itemBuilder: (context, index) {
+                return ExpandableCard(
+                  event: _loggedEvents[index],
+                  tabController: widget.tabController,
+                  highlight: Logger.eventTarget == _loggedEvents[index].index,
+                );
+              },
             ),
           ),
         ),
@@ -137,18 +151,6 @@ class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClient
       _currentSliderValue = Logger.getSeverity().round().toDouble();
       _loggedEvents = Logger.filteredEvents;
     });
-  }
-
-  Future<void> _tryGotoEventAfterBuild() async {
-    await Future.delayed(Duration.zero);
-    if (Logger.hasValidEventTarget) {
-      final index = Logger.consumeEventTarget();
-      _listController.jumpToItem(
-        index: index,
-        scrollController: _scrollController,
-        alignment: 0.5,
-      );
-    }
   }
 }
 

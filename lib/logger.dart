@@ -243,11 +243,11 @@ class Logger {
     }
   }
 
-  static int consumeEventTarget() {
-    final index = _eventIndexTarget;
+  static void resetEventTarget() {
     _eventIndexTarget = -1;
-    return index;
   }
+
+  static int get eventTarget => _eventIndexTarget;
 
   static bool get hasValidEventTarget => _eventIndexTarget >= 0 && _eventIndexTarget < filteredEvents.length;
 
