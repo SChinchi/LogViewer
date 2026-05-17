@@ -1,5 +1,7 @@
+import 'package:auto_scrolling/auto_scrolling.dart' hide AutoScroll;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:log_viewer/widgets/auto_scrolling/auto_scroll.dart';
 
 import '../utils.dart';
 
@@ -135,7 +137,7 @@ class _AdvancedScrollableState extends State<AdvancedScrollable> {
           actions: actions,
           child: Focus(
             focusNode: widget.mainFocusNode,
-            child: addMiddleScrollFunctionality(
+            child: _addAutoScroll(
               Scrollbar(
                 controller: widget.controller,
                 thumbVisibility: true,
@@ -145,11 +147,21 @@ class _AdvancedScrollableState extends State<AdvancedScrollable> {
                   child: widget.child,
                 ),
               ),
-              widget.controller,
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _addAutoScroll(Scrollbar scrollbar) {
+    if (Environment.isMobile) {
+      return scrollbar;
+    }
+    return AutoScroll(
+      controller: scrollbar.controller!,
+      anchorBuilder: (context) => const SingleDirectionAnchor(direction: Axis.vertical),
+      child: scrollbar,
     );
   }
 }
