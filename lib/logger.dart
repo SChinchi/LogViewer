@@ -55,7 +55,7 @@ class Event {
     color = event.color;
     index = event.index;
     lineCount = event.lineCount;
-    repeat = repeat;
+    repeat = event.repeat;
     modIndex = event.modIndex;
   }
 
