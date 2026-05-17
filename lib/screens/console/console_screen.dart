@@ -48,17 +48,14 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        if (_tabController.previousIndex == 1) {
-          Logger.modManager.clearSelections();
-        }
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _allFocusNodes[_currentIndex].requestFocus();
-        });
-        setState(() {
-          _currentIndex = _tabController.index;
-        });
+      if (_tabController.previousIndex == 1) {
+        Logger.modManager.clearSelections();
       }
+
+      _currentIndex = _tabController.index;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _allFocusNodes[_currentIndex].requestFocus();
+      });
     });
   }
 
