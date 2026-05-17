@@ -19,6 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _focusNode = FocusNode(debugLabel: 'settings-main');
   var _useModManifest = Settings.useModManifest.value;
   var _cutOffDateEnabled = Settings.useCutOffDate.value;
+  var _mentionAiMods = Settings.mentionAiMods.value;
   final _whitelistTextController = TextEditingController();
   final _problematicTextController = TextEditingController();
   final _collapsibleTextController = TextEditingController();
@@ -194,6 +195,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 );
                               },
                             );
+                          },
+                        ),
+                        ListTile(
+                          title: const Text('Mention AI Mods'),
+                          trailing: Switch(
+                            value: _mentionAiMods,
+                            onChanged: (bool value) async {
+                              await Settings.setMentionAiMods(value);
+                              setState(() {
+                                _mentionAiMods = value;
+                              });
+                            },
+                          ),
+                          onTap: () async {
+                            await Settings.setMentionAiMods(!_mentionAiMods);
+                            setState(() {
+                              _mentionAiMods = !_mentionAiMods;
+                            });
                           },
                         ),
                       ],

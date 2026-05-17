@@ -134,6 +134,7 @@ class _ModListPageState extends State<ModListPage> with AutomaticKeepAliveClient
                               color: mod.isDeprecated ? Colors.red
                                   : mod.isOld ? Colors.grey
                                   : mod.isProblematic ? Colors.yellow
+                                  : mod.hasAi ? Colors.blue
                                   : AppTheme.primaryColor,
                               backgroundColor: mod.isSelected ? AppTheme.selectedColor
                                   : AppTheme.secondaryColor,

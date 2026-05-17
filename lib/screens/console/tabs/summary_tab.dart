@@ -58,7 +58,8 @@ class _SummaryPageState extends State<SummaryPage> with AutomaticKeepAliveClient
   Text? _collectModIssues(List<Mod> mods) {
     var deprecated = 0,
         old = 0,
-        problematic = 0;
+        problematic = 0,
+        ai = 0;
     for (final mod in mods) {
       if (mod.isDeprecated) {
         deprecated += 1;
@@ -68,6 +69,9 @@ class _SummaryPageState extends State<SummaryPage> with AutomaticKeepAliveClient
       }
       if (mod.isProblematic) {
         problematic += 1;
+      }
+      if (mod.hasAi) {
+        ai += 1;
       }
     }
     final warnings = <String>[];
@@ -79,6 +83,9 @@ class _SummaryPageState extends State<SummaryPage> with AutomaticKeepAliveClient
     }
     if (problematic > 0) {
       warnings.add('$problematic problematic');
+    }
+    if (ai > 0) {
+      warnings.add('$ai AI');
     }
 
     if (warnings.isEmpty) {

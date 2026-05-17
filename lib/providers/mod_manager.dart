@@ -14,6 +14,7 @@ class Mod {
   bool isSelected = false;
   bool isLatestVersion = true;
   bool isUnique = true;
+  List<String> categories = [];
 
   Mod(this.guid, this.bepInName) {
     var pattern = RegExp(r'^(.*)-(\d+).(\d+).(\d+)');
@@ -36,6 +37,8 @@ class Mod {
   }
 
   bool get isMissingManifest => Settings.useModManifest.value ? guid == Constants.noManifestModName : false;
+
+  bool get hasAi => Settings.mentionAiMods.value && categories.contains('AI Generated');
 }
 
 class Version {
@@ -60,6 +63,8 @@ enum ModCategory {
   Old,
   // ignore: constant_identifier_names
   Problematic,
+  // ignore: constant_identifier_names
+  AI,
 }
 
 class ModManager with ChangeNotifier {
@@ -98,7 +103,8 @@ class ModManager with ChangeNotifier {
     if (_category == ModCategory.All
         || (_category == ModCategory.Deprecated && mod.isDeprecated)
         || (_category == ModCategory.Old && mod.isOld && !mod.isDeprecated)
-        || (_category == ModCategory.Problematic && mod.isProblematic)) {
+        || (_category == ModCategory.Problematic && mod.isProblematic)
+        || (_category == ModCategory.AI && mod.hasAi)) {
       return _searchString.pattern.isEmpty || mod.name.contains(_searchString);
     }
     return false;

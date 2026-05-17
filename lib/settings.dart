@@ -9,6 +9,7 @@ class Settings {
   static const keyCutOffDate = 'cut_off_date';
   static const keyDeprecatedAndOldWhitelist = 'deprecated_and_old_whitelist';
   static const keyProblematicModlist = 'problematic_modlist';
+  static const keyMentionAiMods = 'mention_ai_mods';
   static const keyConsoleEventMaxLines = 'console_event_max_lines';
   static const keyTextSizeCopyThreshold = 'text_size_copy_threshold';
 
@@ -18,6 +19,7 @@ class Settings {
   static late final ValueNotifier<DateTime?> cutOffDate;
   static late final ValueNotifier<List<String>> deprecatedAndOldWhitelist;
   static late final ValueNotifier<List<String>> problematicModlist;
+  static late final ValueNotifier<bool> mentionAiMods;
   static late final ValueNotifier<int> consoleEventMaxLines;
   static late final ValueNotifier<int> textSizeCopyThreshold;
 
@@ -38,6 +40,7 @@ class Settings {
     cutOffDate = ValueNotifier(DateTime.tryParse(_prefs.getString(keyCutOffDate) ?? ''));
     deprecatedAndOldWhitelist = ValueNotifier(_prefs.getStringList(keyDeprecatedAndOldWhitelist) ?? []);
     problematicModlist = ValueNotifier(_prefs.getStringList(keyProblematicModlist) ?? []);
+    mentionAiMods = ValueNotifier(_prefs.getBool(keyMentionAiMods) ?? true);
     consoleEventMaxLines = ValueNotifier(_prefs.getInt(keyConsoleEventMaxLines) ?? 7);
     textSizeCopyThreshold = ValueNotifier(_prefs.getInt(keyTextSizeCopyThreshold) ?? 2000);
 
@@ -79,6 +82,14 @@ class Settings {
     if (!listEquals(problematicModlist.value, items)) {
       problematicModlist.value = items;
       await _prefs.setStringList(keyProblematicModlist, items);
+      await Logger.getAllModsStatus();
+    }
+  }
+
+  static Future<void> setMentionAiMods(bool value) async {
+    if (mentionAiMods.value != value) {
+      mentionAiMods.value = value;
+      await _prefs.setBool(keyMentionAiMods, value);
       await Logger.getAllModsStatus();
     }
   }

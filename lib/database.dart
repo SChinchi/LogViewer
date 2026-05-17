@@ -55,6 +55,8 @@ class DB {
       case 2:
         await db.execute('ALTER TABLE ${Constants.tableName} ADD ${Entry.latestVersionKey} TEXT');
         break;
+      case 3:
+        await db.execute('ALTER TABLE ${Constants.tableName} ADD ${Entry.categoriesKey} TEXT');
     }
   }
 
@@ -84,11 +86,12 @@ class DB {
     for (final kvp in entries) {
       final fullName = kvp[Entry.fullNameKey] as String;
       result[fullName] = Entry(
-          fullName: fullName,
-          dateTs: kvp[Entry.dateTsKey] as String,
-          dateDb: kvp[Entry.dateDbKey] as String,
-          isDeprecated: kvp[Entry.deprecatedKey] as int,
-          latestVersion: kvp[Entry.latestVersionKey] as String?,
+        fullName: fullName,
+        dateTs: kvp[Entry.dateTsKey] as String,
+        dateDb: kvp[Entry.dateDbKey] as String,
+        isDeprecated: kvp[Entry.deprecatedKey] as int,
+        latestVersion: kvp[Entry.latestVersionKey] as String?,
+        categories: kvp[Entry.categoriesKey] as String?,
       );
     }
     return result;
@@ -101,11 +104,13 @@ class Entry {
   static const dateDbKey = 'date_db';
   static const deprecatedKey = 'deprecated';
   static const latestVersionKey = 'latest_version';
+  static const categoriesKey = 'categories';
   final String fullName;
   final String dateTs;
   final String dateDb;
   final int isDeprecated;
   final String? latestVersion;
+  final String? categories;
 
   Entry({
     required this.fullName,
@@ -113,6 +118,7 @@ class Entry {
     required this.dateDb,
     required this.isDeprecated,
     required this.latestVersion,
+    required this.categories,
   });
 
   Map<String, Object?> serialise() {
@@ -122,6 +128,7 @@ class Entry {
       dateDbKey: dateDb,
       deprecatedKey: isDeprecated,
       latestVersionKey: latestVersion,
+      categoriesKey: categories,
     };
   }
 }

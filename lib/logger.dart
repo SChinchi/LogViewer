@@ -263,6 +263,11 @@ class Logger {
       final entry = query[mod.fullName];
       if (entry != null) {
         final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+        final categories = entry.categories;
+        if (categories == null) {
+          toUpdate.add(mod.fullName);
+          continue;
+        }
         mod.isDeprecated = !whitelisted && entry.isDeprecated == 1;
         mod.isOld = !whitelisted
             && cutOffDate != null
@@ -275,6 +280,7 @@ class Logger {
           mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
         }
         mod.isProblematic = problematicModlist.contains(mod.guid) || mod.isMissingManifest;
+        mod.categories = categories.split(';');
       }
       else {
         toUpdate.add(mod.fullName);
@@ -297,6 +303,7 @@ class Logger {
               final modPlugins = Logger.modManager.getModPlugins(fullName);
               if (modPlugins != null) {
                 final latestVersion = tsMod['versions'].first['version_number'];
+                final categories = (tsMod['categories'] as List).cast<String>();
                 for (final mod in modPlugins) {
                   final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
                   mod.isDeprecated = !whitelisted && tsMod['is_deprecated'];
@@ -309,6 +316,7 @@ class Logger {
                       && !mod.isDeprecated;
                   mod.isProblematic = problematicModlist.contains(mod.guid) || mod.isMissingManifest;
                   mod.isLatestVersion = mod.version.toString() == latestVersion;
+                  mod.categories = categories;
                 }
                 final entry = Entry(
                   fullName: fullName,
@@ -316,6 +324,7 @@ class Logger {
                   dateDb: now.toIso8601String(),
                   isDeprecated: tsMod['is_deprecated'] ? 1 : 0,
                   latestVersion: latestVersion,
+                  categories: categories.join(';'),
                 );
                 DB.insertMod(entry);
                 toUpdate.remove(fullName);
@@ -336,6 +345,7 @@ class Logger {
           if (entry != null) {
             final modPlugins = Logger.modManager.getModPlugins(fullName);
             if (modPlugins != null) {
+              final categories = entry.categories?.split(';') ?? [];
               for (final mod in modPlugins) {
                 final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
                 mod.isDeprecated = !whitelisted && entry.isDeprecated == 1;
@@ -348,6 +358,7 @@ class Logger {
                     && !mod.isDeprecated;
                 mod.isProblematic = problematicModlist.contains(mod.guid) || mod.isMissingManifest;
                 mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
+                mod.categories = categories;
               }
             }
           }
