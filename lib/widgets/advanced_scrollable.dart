@@ -80,6 +80,8 @@ class _AdvancedScrollableState extends State<AdvancedScrollable> {
         node.addListener(_onFocusChanged);
       }
     }
+    // The settings screen and summary tab (before switching tabs) don't work if we don't request focus manually.
+    _onFocusChanged();
   }
 
   @override
