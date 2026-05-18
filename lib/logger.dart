@@ -453,7 +453,7 @@ class Diagnostics {
       if (chainLoaderPattern.firstMatch(event.fullString) != null) {
         final eventCopy = Event.clone(event);
         eventCopy.modIndex = currentModIndex;
-        eventCopy.fullString = '${event.modName}\n${eventCopy.fullString}';
+        eventCopy.fullString = '${eventCopy.modName}\n${eventCopy.fullString}';
         modsCrashingOnAwake.add(eventCopy);
       }
       if (stuckLoadingPattern.firstMatch(event.fullString) != null && event.severity < 2) {
