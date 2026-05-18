@@ -402,7 +402,6 @@ class Logger {
 class Diagnostics {
   static final CategoryItems outdatedMods = CategoryItems();
   static final CategoryItems dependencyIssues = CategoryItems();
-  static final CategoryItems _modsCrashingOnAwake = CategoryItems();
   static final CategoryItems modsCrashingOnAwake = CategoryItems();
   static final CategoryItems hookFails = CategoryItems();
   static final CategoryItems stuckLoading = CategoryItems();
@@ -412,7 +411,6 @@ class Diagnostics {
   static void _reset() {
     outdatedMods.reset();
     dependencyIssues.reset();
-    _modsCrashingOnAwake.reset();
     modsCrashingOnAwake.reset();
     hookFails.reset();
     stuckLoading.reset();
@@ -455,7 +453,8 @@ class Diagnostics {
       if (chainLoaderPattern.firstMatch(event.fullString) != null) {
         final eventCopy = Event.clone(event);
         eventCopy.modIndex = currentModIndex;
-        _modsCrashingOnAwake.add(eventCopy);
+        eventCopy.fullString = '${event.modName}\n${eventCopy.fullString}';
+        modsCrashingOnAwake.add(eventCopy);
       }
       if (stuckLoadingPattern.firstMatch(event.fullString) != null && event.severity < 2) {
         stuckLoading.add(event);
@@ -476,7 +475,6 @@ class Diagnostics {
         }
       }
     }
-    rebuildModsCrashingOnAwake();
     mostCommonRecurrentErrors.events.addAll(encounteredCommonErrors.values);
     mostCommonRecurrentErrors.events.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
   }
@@ -495,11 +493,10 @@ class Diagnostics {
   }
 
   static void rebuildModsCrashingOnAwake() {
-    modsCrashingOnAwake.clear();
-    for (final event in Diagnostics._modsCrashingOnAwake.events) {
-      final eventCopy = Event.clone(event);
-      eventCopy.fullString = '${event.modName}\n${eventCopy.fullString}';
-      modsCrashingOnAwake.add(eventCopy);
+    for (final event in Diagnostics.modsCrashingOnAwake.events) {
+      final modNameAndText = event.fullString.split('\n');
+      modNameAndText[0] = event.modName!;
+      event.fullString = modNameAndText.join('\n');
     }
   }
 }
