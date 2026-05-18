@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  file_picker: ^10.1.2
+  file_picker: ^11.0.2
   super_drag_and_drop: ^0.9.1
   http: ^1.2.2
   sqflite: ^2.4.1
@@ -59,7 +59,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  isolate_manager_generator: ^0.2.0
+  isolate_manager_generator: ^0.4.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

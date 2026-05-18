@@ -103,13 +103,13 @@ class _FilePickerState extends State<_FilePicker>{
         if (Logger.isLoading) {
           return;
         }
-        result = await FilePicker.platform.pickFiles(allowMultiple: false);
+        result = await FilePicker.pickFiles(allowMultiple: false, withData: true);
         if (result != null) {
           final logText = Environment.isWeb
             ? _loadFromBytes(result!.files.first.bytes!)
             : await _loadFromFile(result!.files.first.xFile.path);
           if (Environment.isMobile) {
-            FilePicker.platform.clearTemporaryFiles();
+            FilePicker.clearTemporaryFiles();
           }
           if (context.mounted) {
             _tryParseFile(context, logText);
@@ -200,8 +200,8 @@ class _DropZoneState extends State<_DropZone> {
         _tryParseFile(context, logText);
       }
     });
-    // TODO: Is there anything better for .log files on the web?
-    if (Environment.isWeb && progress == null) {
+    // TODO: Is there anything better for .log files on these platforms?
+    if ((Environment.isWeb || Environment.isAndroid) && progress == null) {
       progress = reader.getFile(_webDefault, (file) async {
         final stream = await _readFullStream(file);
         final logText = utf8.decode(stream, allowMalformed: true);
