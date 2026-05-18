@@ -5,40 +5,55 @@ A cross-platform app to view saved BepInEx logs just like [BepInEx.GUI](https://
 Available on:
 - Windows
 - Android
-- Web
+- Web (try it [here](https://schinchi.github.io/logviewer))
 
 ## Features
 
-- Supports plain text and .zip files.
-- Drag-n-drop files on the executable for easy loading.
-- Mod list inspector with search filtering.
-  - Deprecated/old mods are flagged appropriately by checking their status on Thunderstore.
-    - Whitelist for any mods that fall under these conditions but are still functional.
-  - Custom list for generally problematic mods.
-  - Long press for custom selection. It is recommended to use this way to add mods to any white-/blacklists.
-  - Copy all filtered mods to clipboard.
-  - Create a profile code from the mods in the log.
-- A console UI with search and log level filters.
-  - Long messages are collapsible. Configurable. 
-  - Repeated events are bundled together for compression and to highlight potential error spam. Indicated with an orange number at the bottom right.
-  - Right click on event (also works from the diagnostics tab):
-    - Copy text to clipboard. Long messages can be copied as a file instead. Configurable.
-    - Go to event; resets all filters and centers screen around an event to see the local context.
-  - The search supports regex. The following flags can further limit a search:
-    - `exclude:term` or `exclude:(term|another|and with spaces)` filters events that contain any of the specified keywords. 
-    - `repeat:N` filters for events that are repeated at least N times in a row.
-    - `range:start..end` filters for event indices. If either value is omitted, a default is used. Negative numbers count from the end of the list, e.g., `range:-5..` is the last 5 events.
-- A diagnostics tab that collects various issues that may highlight why a profile leads to errors.
-  - **Outdated Mods**: for mods not using the latest version on Thunderstore. Ignore if intentionally downpatching.
-  - **Missing Dependencies & Incompatibilities**: for mods failing to load due to dependency issues.
-  - **Mods Crashing On Awake**: errors with `BepInEx.Bootstrap.Chainloader:Start()`. Incomplete mod loading may lead to issues for other mods.
-  - **Flawed Code Modifications**: errors about MMHOOK and Harmony patches. Signals broken mods or corrupted code state.
-  - **Stuck Loading x%**: for errors that cause the game to hang on the loading screen. 
-  - **Missing Member Exception**: for outdated mods that attempt to call missing code.
-  - **Most Repeated Errors**: error events logged multiple times consecutively sorted in descending order.
+### File support
+
+- Accepts plain text and .zip files.
+- Drag-and-drop files onto the executable for quick loading.
+
+### Mod list inspector
+
+- Searchable filter for mods.
+- Flags deprecated/old/AI mods by checking their Thunderstore status.
+- Custom list for generally problematic mods.
+- Long-press selection for adding mods to white-/blacklists.
+- Copy all filtered mods to clipboard.
+- Generate a profile code (does not include [patchers](https://github.com/SChinchi/LogViewer/issues/4)).
+
+### Console UI
+
+- Searchable console with log-level filters and regex support.
+- Search flags to refine results:
+  - `exclude:term` or `exclude:(term|another|with spaces)` — exclude events that contain any listed keywords.
+  - `repeat:N` — match events repeated at least N times in a row.
+  - `range:start..end` — filter by event index. Omitted values use sensible defaults; negative numbers count from the end (e.g., range:-5.. is the last 5 events).
+- Long messages are collapsible (configurable).
+- Repeated events are bundled to reduce noise, indicated with an orange counter at the bottom right.
+- Right-click actions:
+  - Copy event text to clipboard; long messages can be copied as a file (configurable).
+  - Go to event: resets filters and centers the view on that event for local context.
+
+### Diagnostics
+
+- Outdated Mods — mods not using the latest Thunderstore version (ignore if intentionally downpatched).
+- Missing Dependencies & Incompatibilities — mods that fail to load due to dependency problems.
+- Mods Crashing On Awake — errors originating from BepInEx.Bootstrap.Chainloader:Start() which may lead to further issues.
+- Flawed Code Modifications — errors with MMHOOK or Harmony patches indicating broken functionality.
+- Stuck Loading x% — errors causing the game to hang during loading.
+- Missing Member Exception — errors by outdated mods calling missing code.
+- Most Repeated Errors — consecutive error events sorted by frequency (descending).
 
 ## How to build
 
 Follow the steps described in the Flutter [documentation](https://docs.flutter.dev/get-started/install) for your current environment.
 
 Run `build_all.ps1` to generate release versions for any supported platforms which can be found in "build/binaries".
+
+For the web you need to create the [sqlite binaries](https://pub.dev/packages/sqflite_common_ffi_web) first by running once:
+
+```
+dart run sqflite_common_ffi_web:setup
+```
