@@ -51,6 +51,7 @@ class Settings {
     if (useModManifest.value != value) {
       useModManifest.value = value;
       await _prefs.setBool(keyUseModManifest, value);
+      await Logger.getAllModsStatus();
     }
   }
 

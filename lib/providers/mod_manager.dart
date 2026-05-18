@@ -36,7 +36,8 @@ class Mod {
     return bepInName;
   }
 
-  bool get isMissingManifest => Settings.useModManifest.value ? guid == Constants.noManifestModName : false;
+  bool get hasManifest => guid != Constants.noManifestModName;
+  bool get hasManifestEffective => !Settings.useModManifest.value || hasManifest;
 
   bool get hasAi => Settings.mentionAiMods.value && categories.contains('AI Generated');
 }
@@ -167,9 +168,9 @@ class ModManager with ChangeNotifier {
 
   void updateAmbiguousMods() {
     for (final mod in mods) {
-      if (mod.isMissingManifest || _nameToMod[mod.fullName]!.length > 1) {
+      if (!mod.hasManifest || _nameToMod[mod.fullName]!.length > 1) {
         // Manual mods are not updated when we fetch Thunderstore data, so we do it... manually
-        mod.isProblematic = mod.isMissingManifest;
+        mod.isProblematic = !mod.hasManifestEffective;
         mod.isUnique = false;
       }
     }

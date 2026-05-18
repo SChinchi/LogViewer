@@ -186,7 +186,7 @@ class _ModListPageState extends State<ModListPage> with AutomaticKeepAliveClient
                               final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}\n');
                               stringBuffer.writeln('mods:');
                               for (var mod in Logger.modManager.mods) {
-                                if (!mod.isMissingManifest) {
+                                if (mod.hasManifest) {
                                   final version = mod.version;
                                   stringBuffer.writeln('  - name: ${mod.fullName}');
                                   stringBuffer.writeln('    version:');

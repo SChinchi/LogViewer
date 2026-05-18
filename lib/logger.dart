@@ -279,7 +279,7 @@ class Logger {
         else {
           mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
         }
-        mod.isProblematic = problematicModlist.contains(mod.guid) || mod.isMissingManifest;
+        mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
         mod.categories = categories.split(';');
       }
       else {
@@ -289,6 +289,7 @@ class Logger {
 
     if (toUpdate.isEmpty) {
       Diagnostics.collectOutdatedMods();
+      modManager.updateAmbiguousMods();
       modManager.recalculateFilteredMods();
       return;
     }
@@ -314,7 +315,7 @@ class Logger {
                           .difference(cutOffDate)
                           .isNegative
                       && !mod.isDeprecated;
-                  mod.isProblematic = problematicModlist.contains(mod.guid) || mod.isMissingManifest;
+                  mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
                   mod.isLatestVersion = mod.version.toString() == latestVersion;
                   mod.categories = categories;
                 }
@@ -336,6 +337,7 @@ class Logger {
           }
         }
         Diagnostics.collectOutdatedMods();
+        modManager.updateAmbiguousMods();
         modManager.recalculateFilteredMods();
       },
       onError: (e) {
@@ -356,7 +358,7 @@ class Logger {
                         .difference(cutOffDate)
                         .isNegative
                     && !mod.isDeprecated;
-                mod.isProblematic = problematicModlist.contains(mod.guid) || mod.isMissingManifest;
+                mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
                 mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
                 mod.categories = categories;
               }
@@ -364,6 +366,7 @@ class Logger {
           }
         }
         Diagnostics.collectOutdatedMods();
+        modManager.updateAmbiguousMods();
         modManager.recalculateFilteredMods();
       })
     });
@@ -378,7 +381,6 @@ class Logger {
       final mod = List<String>.from(modData);
       Logger.modManager.add(Mod(mod[0], mod[1]));
     }
-    Logger.modManager.updateAmbiguousMods();
     getAllModsStatus();
 
     for (final line in data['summary']) {
