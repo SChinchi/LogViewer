@@ -9,8 +9,6 @@ import 'constants.dart';
 const int _red = 0xFFF44336;
 const int _yellow = 0xFFFFEB3B;
 
-final eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
-
 // This is almost a mirror image of the Event class in logger.
 // The reason for this is that this class cannot contain a Color reference,
 // so this is mainly used for parsing and the other for populating data.
@@ -20,7 +18,7 @@ class Event {
 
   late int severity;
   late String source;
-  late String string;
+  late String message;
   late String fullString;
   late String fullStringNoPrefix;
   int? color;
@@ -33,12 +31,9 @@ class Event {
   String? tsModName;
   String? bepInModName;
 
-  Event(String text, RegExpMatch match) {
-    severity = Constants.logSeverity.indexOf(match.group(2)!);
-    source = match.group(3)!;
-    string = match.group(4)!;
-    fullString = text;
-    fullStringNoPrefix = text.substring(match.group(1)!.length);
+  Event(String prefix, String logLevel, this.source, this.message, this.fullString) {
+    severity = Constants.logSeverity.indexOf(logLevel);
+    fullStringNoPrefix = fullString.substring(prefix.length);
     if (severity < 2) {
       color = _red;
     }
@@ -49,11 +44,11 @@ class Event {
 
     // Check for loading mod pattern
     if (source == 'BepInEx') {
-      final tsModPattern = _tsModPattern.firstMatch(match.group(4)!);
+      final tsModPattern = _tsModPattern.firstMatch(message);
       if (tsModPattern != null) {
         tsModName = tsModPattern.group(1)!;
       }
-      final bepInModPattern = _bepInModPattern.firstMatch(match.group(4)!);
+      final bepInModPattern = _bepInModPattern.firstMatch(message);
       if (bepInModPattern != null) {
         bepInModName = bepInModPattern.group(1)!;
       }
@@ -64,7 +59,7 @@ class Event {
     return {
       'severity': severity,
       'source': source,
-      'string': string,
+      'message': message,
       'fullString': fullString,
       'fullStringNoPrefix': fullStringNoPrefix,
       'color': color,
@@ -77,25 +72,22 @@ class Event {
 }
 
 class Parser {
-  static final eventPattern = RegExp('(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] (.*)');
+  // The space at the end is intentional.
+  static final _eventHeader = RegExp('^(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] ', multiLine: true);
 
   final summary = <List<dynamic>>[];
   final mods = <List<String>>[];
   final events = <Event>[];
 
-  void _addEvent(String text) {
-    final match = eventPattern.firstMatch(text);
-    if (match == null) {
-      return;
-    }
+  void _addEvent(String prefix, String severity, String source, String message, String fullString) {
     // Compress repeated messages for the console
-    final sNoPrefix = text.substring(match.group(1)!.length);
-    if (events.isNotEmpty && events.last.fullStringNoPrefix == sNoPrefix) {
+    final thisEventNoPrefix = fullString.substring(prefix.length);
+    if (events.isNotEmpty && events.last.fullStringNoPrefix == thisEventNoPrefix) {
       events.last.repeat++;
       return;
     }
     final previousEvent = events.isNotEmpty ? events.last : null;
-    final event = Event(text, match);
+    final event = Event(prefix, severity, source, message, fullString);
     event.index = events.length;
     events.add(event);
 
@@ -126,20 +118,20 @@ class Parser {
     final pluginsLine = RegExp(r'^\d+ plugins to load$');
     final wWiseLine = RegExp(r'^WwiseUnity: Setting Plugin DLL path to');
     for (final event in events) {
-      final wWiseMatch = wWiseLine.firstMatch(event.string) != null;
+      final wWiseMatch = wWiseLine.firstMatch(event.message) != null;
       final isLastSummaryLine = wWiseMatch;
       if (isLastSummaryLine ||
-          bepInExLine.firstMatch(event.string) != null ||
-          unityLine.firstMatch(event.string) != null ||
-          patcherLine.firstMatch(event.string) != null ||
-          pluginsLine.firstMatch(event.string) != null) {
+          bepInExLine.firstMatch(event.message) != null ||
+          unityLine.firstMatch(event.message) != null ||
+          patcherLine.firstMatch(event.message) != null ||
+          pluginsLine.firstMatch(event.message) != null) {
         if (!wWiseMatch) {
-          summary.add([event.string]);
+          summary.add([event.message]);
         }
         // Checking if the installed path is illegitimate to add it to the summary.
         // Epic Games does allow any directory path so some rare false positives are expected.
-        else if (!event.string.contains('/steamapps/common/Risk') && !event.string.contains('/Epic Games/Risk')) {
-          summary.add([event.string, _yellow]);
+        else if (!event.message.contains('/steamapps/common/Risk') && !event.message.contains('/Epic Games/Risk')) {
+          summary.add([event.message, _yellow]);
         }
       }
       if (isLastSummaryLine) {
@@ -148,32 +140,34 @@ class Parser {
     }
   }
 
-  Map<String, dynamic> parse(List<String> lines, IsolateManagerController<String, String> controller) {
+  Map<String, dynamic> parse(String text, IsolateManagerController<String, String> controller) {
+    final trailingNewLines = RegExp(r'(\r\n|\r|\n)+$');
     try {
+      final matches = _eventHeader.allMatches(text).toList();
+      final total = matches.length;
       var progress = 0;
-      var index = 0;
-      final total = lines.length;
-      final sb = StringBuffer(lines[0]);
-      for (final line in lines.sublist(1, lines.length)) {
-        final match = eventPattern.firstMatch(line);
-        // If the new line begins a new log message, the buffer is complete with the previous one
-        if (match != null) {
-          _addEvent(sb.toString().trimRight());
-          sb.clear();
-        }
-        sb.writeln(line);
-        index += 1;
-        if (index % 5000 == 0) {
+      for (var index = 0; index < matches.length; index++) {
+        final match = matches[index];
+        final headerText = match.group(0)!;
+        final prefix = match.group(1)!;
+        final logLevel = match.group(2)!;
+        final source = match.group(3)!;
+        // The full event string is between the current matched header and the next one.
+        final start = match.start;
+        final end = (index + 1 < matches.length) ? matches[index + 1].start : text.length;
+        final fullString = text.substring(start, end).replaceFirst(trailingNewLines, '', headerText.length);
+        // The message body is everything but the header.
+        final message = fullString.substring(headerText.length);
+
+        _addEvent(prefix, logLevel, source, message, fullString);
+
+        if (index % 500 == 0) {
           final currentProgress = (index / total * 100).toInt();
           if (currentProgress != progress) {
             progress = currentProgress;
             controller.sendResult(jsonEncode({'progress': progress}));
           }
         }
-      }
-      // End of file, flush last message in the buffer
-      if (sb.isNotEmpty) {
-        _addEvent(sb.toString().trimRight());
       }
 
       // Prefix each message with its index; useful for range searching
@@ -208,8 +202,7 @@ void parserTask(dynamic params) {
   IsolateManagerFunction.customFunction<String, String>(
     params,
     onEvent: (controller, logText) {
-      final lines = logText.split('\n');
-      return jsonEncode(Parser().parse(lines, controller));
+      return jsonEncode(Parser().parse(logText, controller));
     },
   );
 }

@@ -22,7 +22,7 @@ final _consoleSearchFilterPattens = [
 class Event {
   late int severity;
   late String source;
-  late String string;
+  late String message;
   late String fullString;
   late String fullStringNoPrefix;
   late Color color;
@@ -32,12 +32,12 @@ class Event {
   int? modIndex;
   final controller = ExpandableController();
 
-  Event(String text, RegExpMatch match) {
-    final data = parser.Event(text, match);
+  Event(String prefix, String logLevel, source, String message, String fullString) {
+    final data = parser.Event(prefix, logLevel, source, message, fullString);
     severity = data.severity;
-    source = data.source;
-    string = data.string;
-    fullString = data.fullString;
+    this.source = data.source;
+    this.message = data.message;
+    this.fullString = data.fullString;
     fullStringNoPrefix = data.fullStringNoPrefix;
     color = (data.color == null) ? color = AppTheme.primaryColor : Color(data.color!);
     index = data.index;
@@ -49,7 +49,7 @@ class Event {
   Event.clone(Event event) {
     severity = event.severity;
     source = event.source;
-    string = event.string;
+    message = event.message;
     fullString = event.fullString;
     fullStringNoPrefix = event.fullStringNoPrefix;
     color = event.color;
@@ -62,7 +62,7 @@ class Event {
   Event.fromJson(Map<String, dynamic> data) {
     severity = data['severity'] as int;
     source = data['source'];
-    string = data['string'];
+    message = data['message'];
     fullString = data['fullString'];
     fullStringNoPrefix = data['fullStringNoPrefix'];
     final colorValue = data['color'] as int?;
@@ -442,11 +442,11 @@ class Diagnostics {
         currentModIndex = event.modIndex!;
       }
       if (event.source == 'BepInEx') {
-        if (missingDependency.firstMatch(event.string) != null
-            || incompatibleDependency.firstMatch(event.string) != null
-            || skippingOlder.firstMatch(event.string) != null
-            || skippingInvalid.firstMatch(event.string) != null
-            || errorLoading.firstMatch(event.string) != null) {
+        if (missingDependency.firstMatch(event.message) != null
+            || incompatibleDependency.firstMatch(event.message) != null
+            || skippingOlder.firstMatch(event.message) != null
+            || skippingInvalid.firstMatch(event.message) != null
+            || errorLoading.firstMatch(event.message) != null) {
           dependencyIssues.add(event);
         }
       }
@@ -462,7 +462,7 @@ class Diagnostics {
       if (flawedHookPattern.firstMatch(event.fullString) != null) {
         hookFails.add(event);
       }
-      if (missingPattern.firstMatch(event.string) != null && !encounteredExceptions.contains(event.fullStringNoPrefix)) {
+      if (missingPattern.firstMatch(event.message) != null && !encounteredExceptions.contains(event.fullStringNoPrefix)) {
         missingMemberExceptions.add(event);
         encounteredExceptions.add(event.fullStringNoPrefix);
       }
@@ -486,9 +486,8 @@ class Diagnostics {
         .map((mod) => mod.guid)
         .join('\n');
     if (mods.isNotEmpty) {
-      // We're faking the structure of an Event so we can initialise it as one.
-      final match = parser.Parser.eventPattern.firstMatch('[${Constants.logSeverity[2]}:LogViewer] $mods');
-      outdatedMods.add(Event(mods, match!));
+      // We're faking the structure of an Event so we can add it to the list.
+      outdatedMods.add(Event('', Constants.logSeverity[2], 'LogViewer', mods, mods));
     }
   }
 
