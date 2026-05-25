@@ -134,10 +134,11 @@ class ModManager extends ChangeNotifier {
   }
 
   void _updateAmbiguousMods() {
+    final problematicModlist = Settings.problematicModlist.value;
     for (final mod in mods) {
       if (!mod.hasManifest || _nameToMod[mod.fullName]!.length > 1) {
         // Manual mods are not updated when we fetch Thunderstore data, so we do it... manually
-        mod.isProblematic = !mod.hasManifestEffective;
+        mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
         mod.isUnique = false;
       }
     }
