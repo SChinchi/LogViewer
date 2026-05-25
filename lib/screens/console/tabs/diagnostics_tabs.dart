@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:log_viewer/constants.dart';
-import 'package:log_viewer/logger.dart';
+import 'package:log_viewer/models/event.dart';
+import 'package:log_viewer/providers/console_manager.dart';
+import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/widgets/advanced_scrollable.dart';
 import 'package:log_viewer/widgets/expandable_card.dart';
+import 'package:provider/provider.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
 class DiagnosticsPage extends StatefulWidget {
@@ -18,7 +21,16 @@ class DiagnosticsPage extends StatefulWidget {
 
 class _DiagnosticsPageState extends State<DiagnosticsPage>
     with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  late final ModManager _modManager;
+  late final ConsoleManager _consoleManager;
   final _scrollController = ScrollController(debugLabel: 'diagnostics');
+  final CategoryItems _outdatedMods = CategoryItems();
+  final CategoryItems _dependencyIssues = CategoryItems();
+  final CategoryItems _modsCrashingOnAwake = CategoryItems();
+  final CategoryItems _hookFails = CategoryItems();
+  final CategoryItems _stuckLoading = CategoryItems();
+  final CategoryItems _missingMemberExceptions = CategoryItems();
+  final CategoryItems _mostCommonRecurrentErrors = CategoryItems();
 
   @override
   bool get wantKeepAlive => true;
@@ -26,43 +38,108 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
   @override
   void initState() {
     super.initState();
+    _modManager = context.read<ModManager>();
+    _consoleManager = context.read<ConsoleManager>();
     Settings.useModManifest.addListener(_onSettingChanged);
+    _analyse();
   }
 
   @override
   void dispose() {
     Settings.useModManifest.removeListener(_onSettingChanged);
     _scrollController.dispose();
+    _outdatedMods.dispose(true);
+    _dependencyIssues.dispose();
+    _modsCrashingOnAwake.dispose(true);
+    _hookFails.dispose();
+    _stuckLoading.dispose();
+    _missingMemberExceptions.dispose();
+    _mostCommonRecurrentErrors.dispose();
     super.dispose();
   }
 
   void _onSettingChanged() => setState(() {});
 
+  void _analyse() {
+    final missingDependency = RegExp(r'^Could not load \[.*\] because it has missing dependencies:');
+    final incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');
+    final skippingOlder = RegExp(r'^Skipping \[.*\] because a newer version exists');
+    final skippingInvalid = RegExp(r'^Skipping \[.*\] because it has a dependency that was not loaded');
+    final errorLoading = RegExp(r'^Error loading \[.*\]');
+    // Normally it appears as Chainloader:Start, but if it has been hooked Chainloader::Start
+    final chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:[:]?Start');
+    // The game loads its content in a coroutine, but we want to filter other irrelevant ones.
+    // Most errors are either related to the class that does the loading, RoR2Application, or
+    // coroutines launched by the SystemInitializerAttribute, for which BepInExPack conveniently
+    // appears in the stack trace.
+    final stuckLoadingPattern = RegExp(r'(RoR2Application|FixSystemInitializer).*UnityEngine.SetupCoroutine.InvokeMoveNext', dotAll: true);
+    final flawedHookPattern = RegExp(r'(MonoMod\.RuntimeDetour\.(IL)?Hook\.\.ctor|HarmonyLib\.PatchClassProcessor\.Patch)');
+    final missingPattern = RegExp(r'^Missing(Field|Method)Exception');
+    final encounteredExceptions = <String>{};
+    final encounteredCommonErrors = <String, Event>{};
+    var currentModIndex = 0;
+
+    for (final event in _consoleManager.events) {
+      if (event.modIndex != null) {
+        currentModIndex = event.modIndex!;
+      }
+      if (event.source == 'BepInEx') {
+        if (missingDependency.firstMatch(event.message) != null
+            || incompatibleDependency.firstMatch(event.message) != null
+            || skippingOlder.firstMatch(event.message) != null
+            || skippingInvalid.firstMatch(event.message) != null
+            || errorLoading.firstMatch(event.message) != null) {
+          _dependencyIssues.add(event);
+        }
+      }
+      if (chainLoaderPattern.firstMatch(event.fullString) != null) {
+        final eventCopy = Event.clone(event);
+        eventCopy.modIndex = currentModIndex;
+        eventCopy.fullString = '${_consoleManager.getEventRelatedMod(eventCopy)!.name}\n${eventCopy.fullString}';
+        _modsCrashingOnAwake.add(eventCopy);
+      }
+      if (stuckLoadingPattern.firstMatch(event.fullString) != null && event.severity < 2) {
+        _stuckLoading.add(event);
+      }
+      if (flawedHookPattern.firstMatch(event.fullString) != null) {
+        _hookFails.add(event);
+      }
+      if (missingPattern.firstMatch(event.message) != null && !encounteredExceptions.contains(event.fullStringNoPrefix)) {
+        _missingMemberExceptions.add(event);
+        encounteredExceptions.add(event.fullStringNoPrefix);
+      }
+      if (event.repeat > 0 && event.severity < 2) {
+        if (!encounteredCommonErrors.containsKey(event.fullStringNoPrefix)) {
+          encounteredCommonErrors[event.fullStringNoPrefix] = event;
+        } else if (encounteredCommonErrors[event.fullStringNoPrefix]!.repeat < event.repeat) {
+          encounteredCommonErrors[event.fullStringNoPrefix] = event;
+        }
+      }
+    }
+    _mostCommonRecurrentErrors.events.addAll(encounteredCommonErrors.values);
+    _mostCommonRecurrentErrors.events.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
+  }
+
+  void _tryAddCategory(List<ExpandableList> expandableCategories, CategoryItems items, String header) {
+    if (items.isNotEmpty) {
+      expandableCategories.add(ExpandableList(heading: header, items: items));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    context.select((ModManager modManager) => modManager.mods.where((m) => !m.isLatestVersion).toList());
+    _rebuildOutdatedMods();
+    _rebuildModsCrashingOnAwake();
     final data = <ExpandableList>[];
-    if (Diagnostics.outdatedMods.isNotEmpty) {
-      data.add(ExpandableList(heading: Constants.diagnosticsOutdated, items: Diagnostics.outdatedMods));
-    }
-    if (Diagnostics.dependencyIssues.isNotEmpty) {
-      data.add(ExpandableList(heading: Constants.diagnosticsDependencies, items: Diagnostics.dependencyIssues));
-    }
-    if (Diagnostics.modsCrashingOnAwake.isNotEmpty) {
-      data.add(ExpandableList(heading: Constants.diagnosticsCrashingMods, items: Diagnostics.modsCrashingOnAwake));
-    }
-    if (Diagnostics.hookFails.isNotEmpty) {
-      data.add(ExpandableList(heading: Constants.diagnosticsBadHooks, items: Diagnostics.hookFails));
-    }
-    if (Diagnostics.stuckLoading.isNotEmpty) {
-      data.add(ExpandableList(heading: Constants.diagnosticsStuckLoading, items: Diagnostics.stuckLoading));
-    }
-    if (Diagnostics.missingMemberExceptions.isNotEmpty) {
-      data.add(ExpandableList(heading: Constants.diagnosticsMissingMember, items: Diagnostics.missingMemberExceptions));
-    }
-    if (Diagnostics.mostCommonRecurrentErrors.isNotEmpty) {
-      data.add(ExpandableList(heading: Constants.diagnosticsRepeatErrors, items: Diagnostics.mostCommonRecurrentErrors));
-    }
+    _tryAddCategory(data, _outdatedMods, Constants.diagnosticsOutdated);
+    _tryAddCategory(data, _dependencyIssues, Constants.diagnosticsDependencies);
+    _tryAddCategory(data, _modsCrashingOnAwake, Constants.diagnosticsCrashingMods);
+    _tryAddCategory(data, _hookFails, Constants.diagnosticsBadHooks);
+    _tryAddCategory(data, _stuckLoading, Constants.diagnosticsStuckLoading);
+    _tryAddCategory(data, _missingMemberExceptions, Constants.diagnosticsMissingMember);
+    _tryAddCategory(data, _mostCommonRecurrentErrors, Constants.diagnosticsRepeatErrors);
     return AdvancedScrollable(
       controller: _scrollController,
       mainFocusNode: widget.focusNode,
@@ -83,6 +160,52 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
         },
       ),
     );
+  }
+
+  void _rebuildOutdatedMods() {
+    _outdatedMods.clear();
+    final mods = _modManager
+        .mods
+        .where((mod) => !mod.isLatestVersion)
+        .map((mod) => mod.guid)
+        .join('\n');
+    if (mods.isNotEmpty) {
+      // We're faking the structure of an Event so we can add it to the list.
+      _outdatedMods.add(Event('', Constants.logSeverity[2], 'LogViewer', mods, mods));
+    }
+  }
+
+  void _rebuildModsCrashingOnAwake() {
+    for (final event in _modsCrashingOnAwake.events) {
+      final modNameAndText = event.fullString.split('\n');
+      modNameAndText[0] = _consoleManager.getEventRelatedMod(event)!.name;
+      event.fullString = modNameAndText.join('\n');
+    }
+  }
+}
+
+class CategoryItems {
+  final events = <Event>[];
+  final controller = ExpansibleController();
+
+  bool get isNotEmpty => events.isNotEmpty;
+
+  void add(Event event) {
+    events.add(event);
+  }
+
+  void clear() {
+    events.clear();
+  }
+
+  void dispose([bool disposeEventController = false]) {
+    controller.dispose();
+    if (disposeEventController) {
+      for (final event in events) {
+        event.dispose();
+      }
+    }
+    events.clear();
   }
 }
 

@@ -7,13 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:log_viewer/constants.dart';
-import 'package:log_viewer/logger.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
-import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
 import 'package:log_viewer/widgets/advanced_scrollable.dart';
 import 'package:provider/provider.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 
 class ModListPage extends StatefulWidget {
   final TabController tabController;
@@ -26,9 +25,10 @@ class ModListPage extends StatefulWidget {
 }
 
 class _ModListPageState extends State<ModListPage> with AutomaticKeepAliveClientMixin {
+  late final ModManager _modManager;
   final _textFocusNode = FocusNode(debugLabel: 'modlist-search');
   final _dropdownFocusNode = FocusNode(debugLabel: 'modlist-dropdown');
-  final _textController = TextEditingController(text: Logger.modManager.searchString);
+  late final TextEditingController _textController;
   final _scrollController = ScrollController(debugLabel: 'modlist');
 
   @override
@@ -37,12 +37,12 @@ class _ModListPageState extends State<ModListPage> with AutomaticKeepAliveClient
   @override
   void initState() {
     super.initState();
-    Settings.useModManifest.addListener(_onSettingChanged);
+    _modManager = context.read<ModManager>();
+    _textController = TextEditingController(text: '');
   }
 
   @override
   void dispose() {
-    Settings.useModManifest.removeListener(_onSettingChanged);
     _textFocusNode.dispose();
     _dropdownFocusNode.dispose();
     _textController.dispose();
@@ -50,203 +50,197 @@ class _ModListPageState extends State<ModListPage> with AutomaticKeepAliveClient
     super.dispose();
   }
 
-  void _onSettingChanged() => setState(() {});
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final mods = context
-        .watch<ModManager>()
-        .filteredMods;
-    return Provider(
-      create: (_) => Logger.modManager,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(5, 3, 5, 3),
-        child: Column(
-          children: [
-            Container(
-              alignment: Alignment.topLeft,
-              height: 70,
-              width: 400,
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-                    height: 70,
-                    width: 200,
-                    child: TextField(
-                      focusNode: _textFocusNode,
-                      controller: _textController,
-                      style: const TextStyle(fontSize: 12),
-                      decoration: const InputDecoration(
-                        labelText: Constants.searchText,
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (text) {
-                        Logger.modManager.searchString = text;
-                      },
+    final mods = context.select((ModManager manager) => manager.filteredMods.toList());
+    return Container(
+      padding: const EdgeInsets.fromLTRB(5, 3, 5, 3),
+      child: Column(
+        children: [
+          Container(
+            alignment: Alignment.topLeft,
+            height: 70,
+            width: 400,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+                  height: 70,
+                  width: 200,
+                  child: TextField(
+                    focusNode: _textFocusNode,
+                    controller: _textController,
+                    style: const TextStyle(fontSize: 12),
+                    decoration: const InputDecoration(
+                      labelText: Constants.searchText,
+                      border: OutlineInputBorder(),
                     ),
+                    onChanged: (text) {
+                      _modManager.searchString = text;
+                    },
                   ),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(10, 10, 0, 0),
-                    height: 70,
-                    width: 200,
-                    child: DropdownMenu(
-                      initialSelection: Logger.modManager.category,
-                      inputDecorationTheme: InputDecorationTheme(
-                        isDense: true,
-                        constraints: BoxConstraints.tight(const Size.fromHeight(50)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(10, 10, 0, 0),
+                  height: 70,
+                  width: 200,
+                  child: DropdownMenu(
+                    initialSelection: _modManager.category,
+                    inputDecorationTheme: InputDecorationTheme(
+                      isDense: true,
+                      constraints: BoxConstraints.tight(const Size.fromHeight(50)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      onSelected: (ModCategory? value) {
-                        Logger.modManager.category = value!;
-                      },
-                      dropdownMenuEntries: UnmodifiableListView(
-                        ModCategory.values.map((ModCategory cat) =>
-                            DropdownMenuEntry(value: cat, label: cat.name)),
-                      ),
-                      focusNode: _dropdownFocusNode,
                     ),
+                    onSelected: (ModCategory? value) {
+                      _modManager.category = value!;
+                    },
+                    dropdownMenuEntries: UnmodifiableListView(
+                      ModCategory.values.map((ModCategory cat) =>
+                          DropdownMenuEntry(value: cat, label: cat.name)),
+                    ),
+                    focusNode: _dropdownFocusNode,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Expanded(
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  AdvancedScrollable(
+          ),
+          Expanded(
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                AdvancedScrollable(
+                  controller: _scrollController,
+                  mainFocusNode: widget.focusNode,
+                  otherFocusNodes: [_textFocusNode, _dropdownFocusNode],
+                  child: SuperListView.builder(
                     controller: _scrollController,
-                    mainFocusNode: widget.focusNode,
-                    otherFocusNodes: [_textFocusNode, _dropdownFocusNode],
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount: mods.length,
-                      itemBuilder: (context, index) {
-                        final mod = mods[index];
-                        return GestureDetector(
-                          child: Text(
-                            mod.name,
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              color: mod.isDeprecated ? Colors.red
-                                  : mod.isOld ? Colors.grey
-                                  : mod.isProblematic ? Colors.yellow
-                                  : mod.hasAi ? Colors.blue
-                                  : AppTheme.primaryColor,
-                              backgroundColor: mod.isSelected ? AppTheme.selectedColor
-                                  : AppTheme.secondaryColor,
+                    itemCount: mods.length,
+                    itemBuilder: (context, index) {
+                      return Selector<ModManager, (String, int, bool)>(
+                        selector: (context, modManager) => (mods[index].name, mods[index].labels, mods[index].isSelected),
+                        builder: (context, value, _) {
+                          final mod = mods[index];
+                          return GestureDetector(
+                            child: Text(
+                              mod.name,
+                              textAlign: TextAlign.left,
+                              style: TextStyle(
+                                color: mod.isDeprecated ? Colors.red
+                                    : mod.isOld ? Colors.grey
+                                    : mod.isProblematic ? Colors.yellow
+                                    : mod.isAi ? Colors.blue
+                                    : AppTheme.primaryColor,
+                                backgroundColor: mod.isSelected ? AppTheme.selectedColor
+                                    : AppTheme.secondaryColor,
+                              ),
                             ),
-                          ),
-                          onLongPress: () {
-                            if (!Logger.modManager.isInSelectionMode) {
-                              Logger.modManager.toggleSelected(mod);
-                            }
-                          },
-                          onTap: () {
-                            if (Logger.modManager.isInSelectionMode) {
-                              // Need to trigger a state update because [isInSelectionMode] doesn't change
-                              setState(() {
-                                Logger.modManager.toggleSelected(mod);
-                              });
-                            }
-                          },
-                        );
-                      },
-                    ),
+                            onLongPress: () {
+                              if (!_modManager.isInSelectionMode) {
+                                _modManager.toggleSelected(mod);
+                              }
+                            },
+                            onTap: () {
+                              if (_modManager.isInSelectionMode) {
+                                _modManager.toggleSelected(mod);
+                              }
+                            },
+                          );
+                        },
+                      );
+                    },
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: FloatingActionButton(
-                            heroTag: 'profile',
-                            child: const Icon(Icons.account_circle_rounded),
-                            onPressed: () async {
-                              // TODO: Fix for Web
-                              if (Environment.isWeb) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text(Constants.profileCodeError)));
-                                }
-                                return;
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: FloatingActionButton(
+                          heroTag: 'profile',
+                          child: const Icon(Icons.account_circle_rounded),
+                          onPressed: () async {
+                            // TODO: Fix for Web
+                            if (Environment.isWeb) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text(Constants.profileCodeError)));
                               }
-                              if (Logger.modManager.mods.isEmpty) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text(Constants.emptyModList)));
-                                }
-                                return;
+                              return;
+                            }
+                            if (_modManager.mods.isEmpty) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text(Constants.emptyModList)));
                               }
-                              final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}\n');
-                              stringBuffer.writeln('mods:');
-                              for (var mod in Logger.modManager.mods) {
-                                if (mod.hasManifest) {
-                                  final version = mod.version;
-                                  stringBuffer.writeln('  - name: ${mod.fullName}');
-                                  stringBuffer.writeln('    version:');
-                                  stringBuffer.writeln('      major: ${version.major}');
-                                  stringBuffer.writeln('      minor: ${version.minor}');
-                                  stringBuffer.writeln('      patch: ${version.patch}');
-                                  stringBuffer.writeln('    enabled: true');
-                                }
+                              return;
+                            }
+                            final stringBuffer = StringBuffer('profileName: ${Constants.modProfileName}\n');
+                            stringBuffer.writeln('mods:');
+                            for (var mod in _modManager.mods) {
+                              if (mod.hasManifest) {
+                                final version = mod.version;
+                                stringBuffer.writeln('  - name: ${mod.fullName}');
+                                stringBuffer.writeln('    version:');
+                                stringBuffer.writeln('      major: ${version.major}');
+                                stringBuffer.writeln('      minor: ${version.minor}');
+                                stringBuffer.writeln('      patch: ${version.patch}');
+                                stringBuffer.writeln('    enabled: true');
                               }
-                              final fileHandle = RamFileHandle.asWritableRamBuffer();
-                              final fileStream = OutputFileStream.toRamFile(fileHandle);
-                              final zipFile = ZipFileEncoder()
-                                ..createWithStream(fileStream)
-                                ..addArchiveFile(ArchiveFile.string('export.r2x', stringBuffer.toString()));
-                              await zipFile.close();
-                              await fileHandle.close();
-                              await fileStream.close();
+                            }
+                            final fileHandle = RamFileHandle.asWritableRamBuffer();
+                            final fileStream = OutputFileStream.toRamFile(fileHandle);
+                            final zipFile = ZipFileEncoder()
+                              ..createWithStream(fileStream)
+                              ..addArchiveFile(ArchiveFile.string('export.r2x', stringBuffer.toString()));
+                            await zipFile.close();
+                            await fileHandle.close();
+                            await fileStream.close();
 
-                              final data = '#r2modman\n${base64Encode(fileStream.getBytes())}';
-                              try {
-                                final post = await http.post(
-                                  Uri.parse('https://thunderstore.io/api/experimental/legacyprofile/create/'),
-                                  headers: {
-                                    'Content-Type': 'application/octet-stream',
-                                  },
-                                  body: data,
-                                );
-                                final message = post.statusCode == 200
-                                    ? json.decode(post.body)['key']
-                                    : 'Error: ${post.statusCode}';
-                                await Clipboard.setData(ClipboardData(text: message));
-                              } on SocketException {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text(Constants.noConnectionError)));
-                                }
+                            final data = '#r2modman\n${base64Encode(fileStream.getBytes())}';
+                            try {
+                              final post = await http.post(
+                                Uri.parse('https://thunderstore.io/api/experimental/legacyprofile/create/'),
+                                headers: {
+                                  'Content-Type': 'application/octet-stream',
+                                },
+                                body: data,
+                              );
+                              final message = post.statusCode == 200
+                                  ? json.decode(post.body)['key']
+                                  : 'Error: ${post.statusCode}';
+                              await Clipboard.setData(ClipboardData(text: message));
+                            } on SocketException {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text(Constants.noConnectionError)));
                               }
-                            },
-                          ),
+                            }
+                          },
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: FloatingActionButton(
-                            heroTag: 'copy',
-                            child: const Icon(Icons.copy),
-                            onPressed: () async {
-                              final text = Logger.modManager.filteredMods.map((m) =>
-                              m.name).join('\n');
-                              await Clipboard.setData(ClipboardData(text: text));
-                            },
-                          ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: FloatingActionButton(
+                          heroTag: 'copy',
+                          child: const Icon(Icons.copy),
+                          onPressed: () async {
+                            final text = _modManager.filteredMods.map((m) => m.name).join('\n');
+                            await Clipboard.setData(ClipboardData(text: text));
+                          },
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

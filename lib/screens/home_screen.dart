@@ -7,16 +7,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:isolate_manager/isolate_manager.dart';
-import 'package:log_viewer/parser.dart';
+import 'package:log_viewer/parser.dart' as parser;
 import 'package:log_viewer/constants.dart';
-import 'package:log_viewer/logger.dart';
 import 'package:log_viewer/main.dart';
+import 'package:log_viewer/screens/console/console_screen.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
 import 'package:super_clipboard/super_clipboard.dart' show SimpleFileFormat, DataReaderFile;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
-
-import 'console/console_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String title;
@@ -85,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+bool _isLoading = false;
 final _loadingProgress = ValueNotifier<int>(0);
 
 class _FilePicker extends StatefulWidget {
@@ -100,7 +99,7 @@ class _FilePickerState extends State<_FilePicker>{
     return ElevatedButton(
       style: ElevatedButton.styleFrom(shadowColor: Colors.white),
       onPressed: () async {
-        if (Logger.isLoading) {
+        if (_isLoading) {
           return;
         }
         result = await FilePicker.pickFiles(allowMultiple: false, withData: true);
@@ -179,7 +178,7 @@ class _DropZoneState extends State<_DropZone> {
   }
 
   Future<void> _onPerformDrop(PerformDropEvent event) async {
-    if (Logger.isLoading) {
+    if (_isLoading) {
       return;
     }
     final reader = event.session.items.first.dataReader!;
@@ -244,9 +243,9 @@ void _tryParseFile(BuildContext context, String? text) async {
     return;
   }
 
-  Logger.isLoading = true;
+  _isLoading = true;
   final isolate = IsolateManager.createCustom(
-    parserTask,
+    parser.parserTask,
     workerName: 'parserTask',
   );
   final data = await isolate.compute(
@@ -269,15 +268,13 @@ void _tryParseFile(BuildContext context, String? text) async {
   );
   await isolate.stop();
   _loadingProgress.value = 0;
-  Logger.populateData(jsonDecode(data));
-  Diagnostics.analyse();
-  Logger.isLoading = false;
+  parser.parsedData = jsonDecode(data);
+  _isLoading = false;
 
   if (context.mounted) {
-    if (Logger.events.isNotEmpty) {
+    if (parser.parsedData['success'] == true && (parser.parsedData['events'] as List<dynamic>).isNotEmpty) {
       Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
-    }
-    else {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
     }
   }

@@ -1,8 +1,7 @@
 import 'dart:convert';
 
 import 'package:isolate_manager/isolate_manager.dart';
-
-import 'constants.dart';
+import 'package:log_viewer/constants.dart';
 
 // We can't use flutter material since this is compiled to js,
 // so we define our own colour constants.
@@ -36,8 +35,7 @@ class Event {
     fullStringNoPrefix = fullString.substring(prefix.length);
     if (severity < 2) {
       color = _red;
-    }
-    else if (severity < 3) {
+    } else if (severity < 3) {
       color = _yellow;
     }
     lineCount = fullString.split('\n').length;
@@ -195,6 +193,11 @@ class Parser {
     };
   }
 }
+
+// TODO: Is there a better way to temporarily keep the data in memory without resorting to this?
+Map<String, dynamic> parsedData = {
+  'success': false,
+};
 
 @pragma('vm:entry-point')
 @isolateManagerCustomWorker

@@ -1,59 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
-import 'package:log_viewer/constants.dart';
+import 'package:http/http.dart' as http;
+import 'package:log_viewer/database.dart';
+import 'package:log_viewer/models/mod.dart';
+import 'package:log_viewer/parser.dart';
 import 'package:log_viewer/settings.dart';
-
-class Mod {
-  late String guid;
-  late String bepInName;
-  late String fullName;
-  late Version version;
-  late int index;
-  bool isDeprecated = false;
-  bool isOld = false;
-  bool isProblematic = false;
-  bool isSelected = false;
-  bool isLatestVersion = true;
-  bool isUnique = true;
-  List<String> categories = [];
-
-  Mod(this.guid, this.bepInName) {
-    var pattern = RegExp(r'^(.*)-(\d+).(\d+).(\d+)');
-    var name = pattern.firstMatch(guid);
-    if (name != null) {
-      fullName = name.group(1)!;
-      version = Version(name.group(2)!, name.group(3)!, name.group(4)!);
-    }
-    else {
-      fullName = guid;
-      version = Version('1', '0', '0');
-    }
-  }
-
-  String get name {
-    if (Settings.useModManifest.value) {
-      return isUnique ? guid : '$guid [$bepInName]';
-    }
-    return bepInName;
-  }
-
-  bool get hasManifest => guid != Constants.noManifestModName;
-  bool get hasManifestEffective => !Settings.useModManifest.value || hasManifest;
-
-  bool get hasAi => Settings.mentionAiMods.value && categories.contains('AI Generated');
-}
-
-class Version {
-  final String major;
-  final String minor;
-  final String patch;
-
-  Version(this.major, this.minor, this.patch);
-
-  @override
-  String toString() {
-    return '$major.$minor.$patch';
-  }
-}
 
 enum ModCategory {
   // ignore: constant_identifier_names
@@ -68,7 +20,35 @@ enum ModCategory {
   AI,
 }
 
-class ModManager with ChangeNotifier {
+class ModManager extends ChangeNotifier {
+  ModManager() {
+    for (final modData in parsedData['mods']) {
+      final mod = List<String>.from(modData);
+      add(Mod(mod[0], mod[1]));
+    }
+    updateModData();
+
+    Settings.useModManifest.addListener(notifyListeners);
+    Settings.useCutOffDate.addListener(updateModData);
+    Settings.cutOffDate.addListener(updateModData);
+    Settings.deprecatedAndOldWhitelist.addListener(updateModData);
+    Settings.problematicModlist.addListener(updateModData);
+    Settings.mentionAiMods.addListener(updateModData);
+  }
+
+  @override
+  void dispose() {
+    Settings.useModManifest.removeListener(notifyListeners);
+    Settings.useCutOffDate.removeListener(updateModData);
+    Settings.cutOffDate.removeListener(updateModData);
+    Settings.deprecatedAndOldWhitelist.removeListener(updateModData);
+    Settings.problematicModlist.removeListener(updateModData);
+    Settings.mentionAiMods.removeListener(updateModData);
+    mods.clear();
+    filteredMods.clear();
+    super.dispose();
+  }
+
   final mods = <Mod>[];
   final filteredMods = <Mod>[];
   var isInSelectionMode = false;
@@ -83,7 +63,7 @@ class ModManager with ChangeNotifier {
       return;
     }
     _category = value;
-    recalculateFilteredMods();
+    _recalculateFilteredMods();
   }
   ModCategory get category => _category;
 
@@ -92,7 +72,7 @@ class ModManager with ChangeNotifier {
     if (value != _searchString.pattern) {
       try {
         _searchString = RegExp(value, caseSensitive: false);
-        recalculateFilteredMods();
+        _recalculateFilteredMods();
       } on FormatException catch (_) {
         // Capturing each keystroke of the search means an invalid regex is possible
       }
@@ -105,13 +85,13 @@ class ModManager with ChangeNotifier {
         || (_category == ModCategory.Deprecated && mod.isDeprecated)
         || (_category == ModCategory.Old && mod.isOld && !mod.isDeprecated)
         || (_category == ModCategory.Problematic && mod.isProblematic)
-        || (_category == ModCategory.AI && mod.hasAi)) {
+        || (_category == ModCategory.AI && mod.isAi)) {
       return _searchString.pattern.isEmpty || mod.name.contains(_searchString);
     }
     return false;
   }
 
-  void recalculateFilteredMods() {
+  void _recalculateFilteredMods() {
     filteredMods.clear();
     for (final mod in mods) {
       if (_passesFilter(mod)) {
@@ -119,15 +99,6 @@ class ModManager with ChangeNotifier {
       }
     }
     notifyListeners();
-  }
-
-  void reset() {
-    mods.clear();
-    filteredMods.clear();
-    isInSelectionMode = false;
-    _nameToMod.clear();
-    _category = ModCategory.All;
-    _searchString = RegExp('', caseSensitive: false);
   }
 
   void add(Mod mod) {
@@ -147,13 +118,9 @@ class ModManager with ChangeNotifier {
   }
 
   void toggleSelected(Mod mod) {
-    final oldMode = mods.any((m) => m.isSelected);
     mod.isSelected = !mod.isSelected;
-    final newMode = mods.any((m) => m.isSelected);
-    if (oldMode != newMode) {
-      isInSelectionMode = newMode;
-      notifyListeners();
-    }
+    isInSelectionMode = mods.any((m) => m.isSelected);
+    notifyListeners();
   }
 
   void clearSelections() {
@@ -166,7 +133,7 @@ class ModManager with ChangeNotifier {
     }
   }
 
-  void updateAmbiguousMods() {
+  void _updateAmbiguousMods() {
     for (final mod in mods) {
       if (!mod.hasManifest || _nameToMod[mod.fullName]!.length > 1) {
         // Manual mods are not updated when we fetch Thunderstore data, so we do it... manually
@@ -176,7 +143,124 @@ class ModManager with ChangeNotifier {
     }
   }
 
-  @override
-  // ignore: must_call_super
-  void dispose() {}
+  Future updateModData() async {
+    await DB.init();
+    final query = await DB.allMods();
+    final toUpdate = <String>{};
+    final now = DateTime.now();
+    final cutOffDate = Settings.cutOffDateEffective;
+    final deprecatedAndOldWhitelist = Settings.deprecatedAndOldWhitelist.value;
+    final problematicModlist = Settings.problematicModlist.value;
+    for (final mod in mods) {
+      final entry = query[mod.fullName];
+      if (entry != null) {
+        final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+        final categories = entry.categories;
+        mod.isDeprecated = !whitelisted && entry.isDeprecated == 1;
+        mod.isOld = !whitelisted
+            && cutOffDate != null
+            && DateTime
+                .parse(entry.dateTs)
+                .difference(cutOffDate)
+                .isNegative
+            && !mod.isDeprecated;
+        if (now
+            .difference(DateTime.parse(entry.dateDb))
+            .inHours > 1 || entry.latestVersion == null) {
+          toUpdate.add(mod.fullName);
+        } else {
+          mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
+        }
+        mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
+        if (categories == null) {
+          toUpdate.add(mod.fullName);
+        } else {
+          mod.categories = categories.split(';');
+        }
+      } else {
+        toUpdate.add(mod.fullName);
+      }
+    }
+
+    // Update the UI now for any mods where the database suffices.
+    // And if we make an http request, we will have another update later.
+    _updateAmbiguousMods();
+    _recalculateFilteredMods();
+    notifyListeners();
+
+    if (toUpdate.isNotEmpty) {
+      try {
+        final response = await http.get(Uri.parse('https://thunderstore.io/api/v1/package/'));
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body) as List;
+          for (final tsMod in body) {
+            final fullName = tsMod['full_name'];
+            if (toUpdate.contains(fullName)) {
+              final modPlugins = getModPlugins(fullName);
+              if (modPlugins != null) {
+                final latestVersion = tsMod['versions'].first['version_number'];
+                final categories = (tsMod['categories'] as List).cast<String>();
+                for (final mod in modPlugins) {
+                  final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+                  mod.isDeprecated = !whitelisted && tsMod['is_deprecated'];
+                  mod.isOld = !whitelisted
+                      && cutOffDate != null
+                      && DateTime
+                          .parse(tsMod['date_updated'])
+                          .difference(cutOffDate)
+                          .isNegative
+                      && !mod.isDeprecated;
+                  mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
+                  mod.isLatestVersion = mod.version.toString() == latestVersion;
+                  mod.categories = categories;
+                }
+                final entry = Entry(
+                  fullName: fullName,
+                  dateTs: tsMod['date_updated'],
+                  dateDb: now.toIso8601String(),
+                  isDeprecated: tsMod['is_deprecated'] ? 1 : 0,
+                  latestVersion: latestVersion,
+                  categories: categories.join(';'),
+                );
+                DB.insertMod(entry);
+                toUpdate.remove(fullName);
+                if (toUpdate.isEmpty) {
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } on Exception catch (_) {
+        // Fallback to assigning any old values we still have in the database
+        for (final fullName in toUpdate) {
+          final entry = query[fullName];
+          if (entry != null) {
+            final modPlugins = getModPlugins(fullName);
+            if (modPlugins != null) {
+              final categories = entry.categories?.split(';') ?? [];
+              for (final mod in modPlugins) {
+                final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
+                mod.isDeprecated = !whitelisted && entry.isDeprecated == 1;
+                mod.isOld = !whitelisted
+                    && cutOffDate != null
+                    && DateTime
+                        .parse(entry.dateTs)
+                        .difference(cutOffDate)
+                        .isNegative
+                    && !mod.isDeprecated;
+                mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
+                mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
+                mod.categories = categories;
+              }
+            }
+          }
+        }
+      } finally {
+        _updateAmbiguousMods();
+        _recalculateFilteredMods();
+        notifyListeners();
+      }
+    }
+  }
 }

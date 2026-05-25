@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:log_viewer/constants.dart';
-import 'package:log_viewer/logger.dart';
 import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/widgets/advanced_scrollable.dart';
@@ -132,9 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               currentDate: Settings.cutOffDateEffective ?? DateTime.now(),
                             );
                             await Settings.setCutOffDate(date);
-                            setState(() {
-                              Logger.modStatusNetRequest = Logger.getAllModsStatus();
-                            });
+                            setState(() {});
                           },
                         ),
                         ListTile(

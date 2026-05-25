@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:log_viewer/constants.dart';
-import 'package:log_viewer/logger.dart';
+import 'package:log_viewer/providers/console_manager.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
+import 'package:log_viewer/screens/console/tabs/console_tab.dart';
+import 'package:log_viewer/screens/console/tabs/diagnostics_tabs.dart';
+import 'package:log_viewer/screens/console/tabs/modlist_tab.dart';
+import 'package:log_viewer/screens/console/tabs/summary_tab.dart';
+import 'package:log_viewer/screens/settings_screen.dart';
 import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:provider/provider.dart';
-
-import '../settings_screen.dart';
-import 'tabs/summary_tab.dart';
-import 'tabs/modlist_tab.dart';
-import 'tabs/console_tab.dart';
-import 'tabs/diagnostics_tabs.dart';
 
 class ConsoleScreen extends StatelessWidget {
   const ConsoleScreen({super.key});
@@ -20,7 +19,8 @@ class ConsoleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => Logger.modManager),
+        ChangeNotifierProvider(create: (_) => ModManager()),
+        ChangeNotifierProvider(create: (context) => ConsoleManager(context.read<ModManager>().mods)),
       ],
       child: const ConsoleScreenState(),
     );
@@ -35,6 +35,7 @@ class ConsoleScreenState extends StatefulWidget {
 }
 
 class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerProviderStateMixin {
+  late final ModManager _modManager;
   late final TabController _tabController;
   final _summaryFocusNode = FocusNode(debugLabel: 'summary-main');
   final _modlistFocusNode = FocusNode(debugLabel: 'modlist-main');
@@ -46,10 +47,11 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
   @override
   void initState() {
     super.initState();
+    _modManager = context.read<ModManager>();
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       if (_tabController.previousIndex == 1) {
-        Logger.modManager.clearSelections();
+        _modManager.clearSelections();
       }
 
       _currentIndex = _tabController.index;
@@ -71,64 +73,73 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
 
   @override
   Widget build(BuildContext context) {
-    final isInSelectionMode = context.select((ModManager m) => m.isInSelectionMode);
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 35,
         actions: [
-          if (isInSelectionMode && _tabController.index == 1)
-            ...[
-              IconButton(
-                icon: const Icon(Icons.cancel),
-                onPressed: () {
-                  Logger.modManager.clearSelections();
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.copy),
-                onPressed: () async {
-                  final text = Logger.modManager.mods.where((m) => m.isSelected).map((m) => m.guid);
-                  await Clipboard.setData(ClipboardData(text: text.join('\n')));
-                  Logger.modManager.clearSelections();
-                },
-              ),
-              PopupMenuButton(
-                shadowColor: AppTheme.primaryColor,
-                onSelected: ((value) {
-                  if (value == Constants.selectionOptions[0]) {
-                    Settings.setDeprecatedAndOldWhitelist(_addTo(Settings.deprecatedAndOldWhitelist.value, false));
-                  }
-                  else if (value == Constants.selectionOptions[1]) {
-                    Settings.setDeprecatedAndOldWhitelist(_removeFrom(Settings.deprecatedAndOldWhitelist.value, false));
-                  }
-                  else if (value == Constants.selectionOptions[2]) {
-                    Settings.setProblematicModlist(_addTo(Settings.problematicModlist.value, true));
-                  }
-                  else {
-                    Settings.setProblematicModlist(_removeFrom(Settings.problematicModlist.value, true));
-                  }
-                  Logger.modManager.clearSelections();
-                }),
-                itemBuilder: (BuildContext context) {
-                  return Constants.selectionOptions.map((String choice) {
-                    return PopupMenuItem<String>(value: choice, child: Text(choice));
-                  }).toList();
-                },
-              ),
-            ]
-          else
-            PopupMenuButton(
-              menuPadding: EdgeInsets.zero,
-              shadowColor: AppTheme.primaryColor,
-              onSelected: ((value) {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
-              }),
-              itemBuilder: (BuildContext context) {
-                return Constants.menuOptions.map((String choice) {
-                  return PopupMenuItem(value: choice, child: Text(choice));
-                }).toList();
-              },
-            )
+          Selector<ModManager, bool>(
+            selector: (context, modManager) => modManager.isInSelectionMode,
+            builder: (context, isInSelectionMode, _) {
+              return Row(
+                children: [
+                  if (isInSelectionMode && _tabController.index == 1)
+                    ...[
+                      IconButton(
+                        icon: const Icon(Icons.cancel),
+                        onPressed: () {
+                          _modManager.clearSelections();
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.copy),
+                        onPressed: () async {
+                          final text = _modManager.mods.where((m) => m.isSelected).map((m) => m.guid);
+                          await Clipboard.setData(ClipboardData(text: text.join('\n')));
+                          _modManager.clearSelections();
+                        },
+                      ),
+                      PopupMenuButton(
+                        shadowColor: AppTheme.primaryColor,
+                        onSelected: ((value) {
+                          if (value == Constants.selectionOptions[0]) {
+                            Settings.setDeprecatedAndOldWhitelist(
+                                _addTo(Settings.deprecatedAndOldWhitelist.value, false));
+                          } else if (value == Constants.selectionOptions[1]) {
+                            Settings.setDeprecatedAndOldWhitelist(
+                                _removeFrom(Settings.deprecatedAndOldWhitelist.value, false));
+                          } else if (value == Constants.selectionOptions[2]) {
+                            Settings.setProblematicModlist(
+                                _addTo(Settings.problematicModlist.value, true));
+                          } else {
+                            Settings.setProblematicModlist(
+                                _removeFrom(Settings.problematicModlist.value, true));
+                          }
+                          _modManager.clearSelections();
+                        }),
+                        itemBuilder: (BuildContext context) {
+                          return Constants.selectionOptions.map((String choice) {
+                            return PopupMenuItem<String>(value: choice, child: Text(choice));
+                          }).toList();
+                        },
+                      ),
+                    ]
+                  else
+                    PopupMenuButton(
+                      menuPadding: EdgeInsets.zero,
+                      shadowColor: AppTheme.primaryColor,
+                      onSelected: ((value) {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                      }),
+                      itemBuilder: (BuildContext context) {
+                        return Constants.menuOptions.map((String choice) {
+                          return PopupMenuItem(value: choice, child: Text(choice));
+                        }).toList();
+                      },
+                    )
+                ],
+              );
+            },
+          ),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -154,7 +165,7 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
 
   List<String> _addTo(List<String> items, bool useGuid) {
     final set = items.toSet();
-    for (final mod in Logger.modManager.mods) {
+    for (final mod in _modManager.mods) {
       if (mod.isSelected) {
         set.add(useGuid ? mod.guid : mod.fullName);
       }
@@ -166,7 +177,7 @@ class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerPro
 
   List<String> _removeFrom(List<String> items, bool useGuid) {
     final set = items.toSet();
-    for (final mod in Logger.modManager.mods) {
+    for (final mod in _modManager.mods) {
       if (mod.isSelected) {
         set.remove(useGuid ? mod.guid : mod.fullName);
       }

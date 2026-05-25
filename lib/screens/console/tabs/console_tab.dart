@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-
 import 'package:log_viewer/constants.dart';
-import 'package:log_viewer/logger.dart';
+import 'package:log_viewer/models/event.dart';
+import 'package:log_viewer/providers/console_manager.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/widgets/advanced_scrollable.dart';
 import 'package:log_viewer/widgets/expandable_card.dart';
+import 'package:provider/provider.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
 class ConsolePage extends StatefulWidget {
@@ -18,15 +19,11 @@ class ConsolePage extends StatefulWidget {
 }
 
 class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClientMixin {
-  static _ConsolePageState? _instance;
-
-  var _currentSliderValue = Logger.getSeverity().toDouble();
-  var _status = Constants.logSeverity[Logger.getSeverity()];
-  var _loggedEvents = Logger.filteredEvents;
+  late final ConsoleManager _consoleManager;
   final _textFocusNode = FocusNode(debugLabel: 'console-search');
   final _listController = ListController();
   final _scrollController = ScrollController(debugLabel: 'console');
-  final _textController = TextEditingController(text: Logger.getSearchString());
+  final _textController = TextEditingController(text: '');
 
   @override
   bool get wantKeepAlive => true;
@@ -34,12 +31,11 @@ class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClient
   @override
   void initState() {
     super.initState();
-    _instance = this;
+    _consoleManager = context.read<ConsoleManager>();
   }
 
   @override
   void dispose() {
-    _instance = null;
     _textFocusNode.dispose();
     _listController.dispose();
     _scrollController.dispose();
@@ -50,19 +46,6 @@ class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClient
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // If we try to use goto from Diagnostics without ever visiting the
-    // Console tab, it will have never had a chance to build the view, so
-    // we need to ensure jumping to an index happens after the first build.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (Logger.hasValidEventTarget) {
-        final index = Logger.eventTarget;
-        _listController.jumpToItem(
-          index: index,
-          scrollController: _scrollController,
-          alignment: 0.5,
-        );
-      }
-    });
     return Column(
       children: [
         Container(
@@ -84,38 +67,35 @@ class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClient
                     border: OutlineInputBorder(),
                   ),
                   onChanged: (text) {
-                    setState(() {
-                      Logger.setSearchString(text);
-                      _loggedEvents = Logger.filteredEvents;
-                    });
+                    _consoleManager.setSearchString(text);
                   },
                 ),
               ),
               SizedBox(
                 height: 70,
                 width: 200,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Slider(
-                      value: _currentSliderValue,
-                      min: 0,
-                      max: Constants.logSeverity.length.toDouble() - 1,
-                      divisions: Constants.logSeverity.length - 1,
-                      onChanged: (value) {
-                        setState(() {
-                          _status = Constants.logSeverity[value.round()];
-                          _currentSliderValue = value;
-                          Logger.setSeverity(value.round());
-                          _loggedEvents = Logger.filteredEvents;
-                        });
-                      },
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 0, 0),
-                      child: Text(_status),
-                    ),
-                  ],
+                child: Selector<ConsoleManager, int>(
+                  selector: (context, consoleManager) => consoleManager.getSeverity(),
+                  builder: (context, severity, _) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Slider(
+                          value: severity.toDouble(),
+                          min: 0,
+                          max: Constants.logSeverity.length.toDouble() - 1,
+                          divisions: Constants.logSeverity.length - 1,
+                          onChanged: (value) {
+                            _consoleManager.setSeverity(value.round());
+                          },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 0, 0),
+                          child: Text(Constants.logSeverity[severity]),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ],
@@ -126,16 +106,41 @@ class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClient
             controller: _scrollController,
             mainFocusNode: widget.focusNode,
             otherFocusNodes: [_textFocusNode],
-            child: SuperListView.builder(
-              shrinkWrap: true,
-              listController: _listController,
-              controller: _scrollController,
-              itemCount: _loggedEvents.length,
-              itemBuilder: (context, index) {
-                return ExpandableCard(
-                  event: _loggedEvents[index],
-                  tabController: widget.tabController,
-                  highlight: Logger.eventTarget == _loggedEvents[index].index,
+            child: Selector<ConsoleManager, int>(
+              selector: (context, consoleManager) => consoleManager.eventTargetRevision,
+              builder: (context, counter, _) {
+                return Selector<ConsoleManager, List<Event>>(
+                  selector: (context, consoleManager) => consoleManager.filteredEvents.toList(),
+                  builder: (context, filteredEvents, _) {
+                    // If we try to use goto from Diagnostics without ever visiting the
+                    // Console tab, it will have never had a chance to build the list, so
+                    // we need to ensure jumping to an index happens after the first build.
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      final consoleManager = context.read<ConsoleManager>();
+                      if (consoleManager.hasValidEventTarget) {
+                        _textController.text = '';
+                        final index = consoleManager.eventTarget;
+                        _listController.jumpToItem(
+                          index: index,
+                          scrollController: _scrollController,
+                          alignment: 0.5,
+                        );
+                      }
+                    });
+                    return SuperListView.builder(
+                      shrinkWrap: true,
+                      listController: _listController,
+                      controller: _scrollController,
+                      itemCount: filteredEvents.length,
+                      itemBuilder: (context, index) {
+                        return ExpandableCard(
+                          event: filteredEvents[index],
+                          tabController: widget.tabController,
+                          highlight: _consoleManager.eventTarget == filteredEvents[index].index,
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
@@ -143,19 +148,5 @@ class _ConsolePageState extends State<ConsolePage> with AutomaticKeepAliveClient
         ),
       ],
     );
-  }
-
-  void _resetSearchFiltersAndGotoEvent() {
-    setState(() {
-      _textController.text = Logger.getSearchString();
-      _currentSliderValue = Logger.getSeverity().round().toDouble();
-      _loggedEvents = Logger.filteredEvents;
-    });
-  }
-}
-
-void jumpToConsoleEvent() {
-  if (Logger.hasValidEventTarget) {
-    _ConsolePageState._instance?._resetSearchFiltersAndGotoEvent();
   }
 }

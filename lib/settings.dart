@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'logger.dart';
-
 class Settings {
   static const keyUseModManifest = 'use_mod_manifest';
   static const keyUseCutOffDate = 'use_cut_off_date';
@@ -43,15 +41,12 @@ class Settings {
     mentionAiMods = ValueNotifier(_prefs.getBool(keyMentionAiMods) ?? true);
     consoleEventMaxLines = ValueNotifier(_prefs.getInt(keyConsoleEventMaxLines) ?? 7);
     textSizeCopyThreshold = ValueNotifier(_prefs.getInt(keyTextSizeCopyThreshold) ?? 2000);
-
-    useModManifest.addListener(Diagnostics.rebuildModsCrashingOnAwake);
   }
 
   static Future<void> setUseModManifest(bool value) async {
     if (useModManifest.value != value) {
       useModManifest.value = value;
       await _prefs.setBool(keyUseModManifest, value);
-      await Logger.getAllModsStatus();
     }
   }
 
@@ -59,7 +54,6 @@ class Settings {
     if (useCutOffDate.value != value) {
       useCutOffDate.value = value;
       await _prefs.setBool(keyUseCutOffDate, value);
-      await Logger.getAllModsStatus();
     }
   }
 
@@ -67,7 +61,6 @@ class Settings {
     if (date != null) {
       cutOffDate.value = date;
       await _prefs.setString(keyCutOffDate, date.toIso8601String());
-      await Logger.getAllModsStatus();
     }
   }
 
@@ -75,7 +68,6 @@ class Settings {
     if (!listEquals(deprecatedAndOldWhitelist.value, items)) {
       deprecatedAndOldWhitelist.value = items;
       await _prefs.setStringList(keyDeprecatedAndOldWhitelist, items);
-      await Logger.getAllModsStatus();
     }
   }
 
@@ -83,7 +75,6 @@ class Settings {
     if (!listEquals(problematicModlist.value, items)) {
       problematicModlist.value = items;
       await _prefs.setStringList(keyProblematicModlist, items);
-      await Logger.getAllModsStatus();
     }
   }
 
@@ -91,7 +82,6 @@ class Settings {
     if (mentionAiMods.value != value) {
       mentionAiMods.value = value;
       await _prefs.setBool(keyMentionAiMods, value);
-      await Logger.getAllModsStatus();
     }
   }
 

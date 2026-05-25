@@ -3,16 +3,16 @@ import 'dart:io';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:log_viewer/constants.dart';
+import 'package:log_viewer/models/event.dart';
+import 'package:log_viewer/providers/console_manager.dart';
+import 'package:log_viewer/settings.dart';
+import 'package:log_viewer/themes/themes.dart';
+import 'package:log_viewer/utils.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:path/path.dart' as path;
-
-import '../constants.dart';
-import '../logger.dart';
-import '../screens/console/tabs/console_tab.dart';
-import '../settings.dart';
-import '../themes/themes.dart';
-import '../utils.dart';
 
 class ExpandableCard extends StatefulWidget {
   final Event event;
@@ -33,6 +33,8 @@ class ExpandableCard extends StatefulWidget {
 class _ExpandableCardState extends State<ExpandableCard> with SingleTickerProviderStateMixin {
   _ExpandableCardState();
 
+  late final ConsoleManager _consoleManager;
+
   late final _animationController = AnimationController(
     vsync: this,
     duration: Duration(milliseconds: 1000),
@@ -49,6 +51,7 @@ class _ExpandableCardState extends State<ExpandableCard> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
+    _consoleManager = context.read<ConsoleManager>();
     Settings.consoleEventMaxLines.addListener(_onSettingChanged);
     _animationDecoration.addStatusListener(_onAnimationDecorationStatusChanged);
   }
@@ -74,14 +77,14 @@ class _ExpandableCardState extends State<ExpandableCard> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    final shouldHighlight = widget.highlight && Logger.hasValidEventTarget;
+    final shouldHighlight = widget.highlight && _consoleManager.hasValidEventTarget;
     if (shouldHighlight) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_animationDisposed) {
           _animationController.reverse();
           _animationController.forward();
         }
-        Logger.resetEventTarget();
+        _consoleManager.resetEventTarget();
       });
     }
     final event = widget.event;
@@ -168,8 +171,7 @@ class _ExpandableCardState extends State<ExpandableCard> with SingleTickerProvid
             child: const Text(Constants.eventContextMenuGoto),
             onTap: () async {
               widget.tabController.index = 2;
-              Logger.setEventTarget(widget.event.index);
-              jumpToConsoleEvent();
+              _consoleManager.setEventTarget(widget.event.index);
             },
           ),
       ],

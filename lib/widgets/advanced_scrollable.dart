@@ -1,9 +1,8 @@
 import 'package:auto_scrolling/auto_scrolling.dart' hide AutoScroll;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:log_viewer/utils.dart';
 import 'package:log_viewer/widgets/auto_scrolling/auto_scroll.dart';
-
-import '../utils.dart';
 
 //region Intents
 class ScrollByIntent extends Intent {
