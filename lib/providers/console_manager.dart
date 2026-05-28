@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/models/event.dart';
 import 'package:log_viewer/models/mod.dart';
-import 'package:log_viewer/parser.dart' as parser;
 
 final _consoleSearchFilterPattens = [
   r'\s*(?<exclude>exclude:(?<exclude_term>\(.*\)|[^(\s]\S*))\s*',
@@ -13,9 +12,8 @@ final _consoleSearchFilterPattens = [
 ];
 
 class ConsoleManager extends ChangeNotifier {
-  ConsoleManager(List<Mod> mods) {
+  ConsoleManager(Map<String, dynamic> data, List<Mod> mods) {
     _mods = mods;
-    final data = parser.parsedData;
     if (data['success'] != true) {
       summary = [];
       return;
@@ -25,8 +23,6 @@ class ConsoleManager extends ChangeNotifier {
     }
     filteredEvents.addAll(events);
     summary = data['summary'];
-    // We don't need the data in memory anymore.
-    parser.parsedData.clear();
   }
 
   @override

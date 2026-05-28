@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:log_viewer/database.dart';
 import 'package:log_viewer/models/mod.dart';
-import 'package:log_viewer/parser.dart';
 import 'package:log_viewer/settings.dart';
 
 enum ModCategory {
@@ -21,8 +20,8 @@ enum ModCategory {
 }
 
 class ModManager extends ChangeNotifier {
-  ModManager() {
-    for (final modData in parsedData['mods']) {
+  ModManager(Map<String, dynamic> data) {
+    for (final modData in data['mods']) {
       final mod = List<String>.from(modData);
       add(Mod(mod[0], mod[1]));
     }

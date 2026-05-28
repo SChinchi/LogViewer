@@ -1,42 +1,68 @@
-import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
-import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:isolate_manager/isolate_manager.dart';
-import 'package:log_viewer/parser.dart' as parser;
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/main.dart';
+import 'package:log_viewer/providers/console_manager.dart';
+import 'package:log_viewer/providers/loading_provider.dart';
+import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/screens/console/console_screen.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
-import 'package:super_clipboard/super_clipboard.dart' show SimpleFileFormat, DataReaderFile;
+import 'package:provider/provider.dart';
+import 'package:super_clipboard/super_clipboard.dart' show SimpleFileFormat;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class HomeScreen extends StatefulWidget {
-  final String title;
-
-  const HomeScreen({super.key, required this.title});
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late final LoadingProvider _loadingProvider;
+  final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
   @override
   void initState() {
     super.initState();
+    _loadingProvider = context.read<LoadingProvider>();
+    _loadingProvider.addListener(_handleSelectedFile);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (MyApp.args.isNotEmpty) {
-        final logText = await _loadFromFile(MyApp.args[0]);
-        if (mounted) {
-          _tryParseFile(context, logText);
-        }
+        _loadingProvider.loadFromFile(MyApp.args[0]);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _loadingProvider.removeListener(_handleSelectedFile);
+    super.dispose();
+  }
+
+  void _handleSelectedFile() {
+    if (context.mounted) {
+      if (_loadingProvider.hasData) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          final data = _loadingProvider.data;
+          return MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => ModManager(data)),
+              ChangeNotifierProvider(create: (context) => ConsoleManager(data, context.read<ModManager>().mods)),
+            ],
+            child: const ConsoleScreen(),
+          );
+        }));
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _loadingProvider.data.clear();
+        });
+      } else if (_loadingProvider.errorMessage.isNotEmpty) {
+        _scaffoldMessengerKey.currentState?.showSnackBar(SnackBar(content: Text(_loadingProvider.errorMessage)));
+      }
+    }
   }
 
   @override
@@ -44,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final size = MediaQuery.of(context).size;
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       theme: AppTheme.theme,
       home: Scaffold(
         appBar: AppBar(
@@ -72,8 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: EdgeInsets.fromLTRB(0, 30, 0, 0),
               child: ValueListenableBuilder(
-                valueListenable: _loadingProgress,
-                builder: (context, value, child) => Text(value > 0 ? '${Constants.loadingText}: $value%' : ''),
+                valueListenable: _loadingProvider.progressText,
+                builder: (context, value, child) => Text(_loadingProvider.progressText.value),
               ),
             ),
           ],
@@ -83,35 +110,30 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-bool _isLoading = false;
-final _loadingProgress = ValueNotifier<int>(0);
-
 class _FilePicker extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => _FilePickerState();
 }
 
 class _FilePickerState extends State<_FilePicker>{
-  FilePickerResult? result;
-
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(shadowColor: Colors.white),
       onPressed: () async {
-        if (_isLoading) {
+        final loadingProvider = context.read<LoadingProvider>();
+        if (loadingProvider.isLoading) {
           return;
         }
-        result = await FilePicker.pickFiles(allowMultiple: false, withData: true);
+        final result = await FilePicker.pickFiles(allowMultiple: false, withData: true);
         if (result != null) {
-          final logText = Environment.isWeb
-            ? _loadFromBytes(result!.files.first.bytes!)
-            : await _loadFromFile(result!.files.first.xFile.path);
+          if (Environment.isWeb) {
+            loadingProvider.loadFromBytes(result.files.first.bytes!);
+          } else {
+            loadingProvider.loadFromFile(result.files.first.xFile.path);
+          }
           if (Environment.isMobile) {
             FilePicker.clearTemporaryFiles();
-          }
-          if (context.mounted) {
-            _tryParseFile(context, logText);
           }
         }
       },
@@ -178,39 +200,29 @@ class _DropZoneState extends State<_DropZone> {
   }
 
   Future<void> _onPerformDrop(PerformDropEvent event) async {
-    if (_isLoading) {
+    final loadingProvider = context.read<LoadingProvider>();
+    if (loadingProvider.isLoading) {
       return;
     }
     final reader = event.session.items.first.dataReader!;
     var progress = reader.getFile(Formats.plainTextFile, (file) async {
-      final stream = await _readFullStream(file);
-      final logText = utf8.decode(stream);
-      if (mounted) {
-        _tryParseFile(context, logText);
-      }
+      loadingProvider.loadFromDroppedFile(file, DataReaderFileType.text);
     });
     if (progress != null) {
       return;
     }
     progress = reader.getFile(_zipExtended, (file) async {
-      final stream = await _readFullStream(file);
-      final logText = _readZip(stream);
-      if (mounted) {
-        _tryParseFile(context, logText);
-      }
+      loadingProvider.loadFromDroppedFile(file, DataReaderFileType.zip);
     });
     // TODO: Is there anything better for .log files on these platforms?
     if ((Environment.isWeb || Environment.isAndroid) && progress == null) {
       progress = reader.getFile(_webDefault, (file) async {
-        final stream = await _readFullStream(file);
-        final logText = utf8.decode(stream, allowMalformed: true);
-        if (mounted) {
-          _tryParseFile(context, logText);
-        }
+        loadingProvider.loadFromDroppedFile(file, DataReaderFileType.webText);
       });
     }
-    if (progress == null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
+    // No valid file found, let the provider handle the error message.
+    if (progress == null) {
+      loadingProvider.parseText(null);
     }
   }
 
@@ -218,10 +230,6 @@ class _DropZoneState extends State<_DropZone> {
     setState(() {
       _isDragOver = false;
     });
-  }
-
-  Future<List<int>> _readFullStream(DataReaderFile file) async {
-    return (await file.getStream().toList()).expand((x) => x).toList();
   }
 }
 
@@ -236,73 +244,3 @@ Widget _upload = const Column(
     ),
   ],
 );
-
-void _tryParseFile(BuildContext context, String? text) async {
-  if (text == null) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
-    return;
-  }
-
-  _isLoading = true;
-  final isolate = IsolateManager.createCustom(
-    parser.parserTask,
-    workerName: 'parserTask',
-  );
-  final data = await isolate.compute(
-    text,
-    callback: (dynamic value) {
-      try {
-        final data = jsonDecode(value as String);
-        if (data.containsKey('progress')) {
-          _loadingProgress.value = data['progress'] as int;
-          return false; // Indicates this is a progress update, not the final result
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('Error decoding task message: $e');
-        }
-        return true; // Stop listening
-      }
-      return true; // Default to stop if format is unexpected
-    },
-  );
-  await isolate.stop();
-  _loadingProgress.value = 0;
-  parser.parsedData = jsonDecode(data);
-  _isLoading = false;
-
-  if (context.mounted) {
-    if (parser.parsedData['success'] == true && (parser.parsedData['events'] as List<dynamic>).isNotEmpty) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsoleScreen()));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Constants.parseError)));
-    }
-  }
-}
-
-Future<String?> _loadFromFile(String path) async {
-  final file = File(path);
-  if (!file.existsSync()) {
-    return null;
-  }
-  final bytes = await file.readAsBytes();
-  return _loadFromBytes(bytes.toList());
-}
-
-String? _loadFromBytes(List<int> bytes) {
-  try {
-    final header = bytes.getRange(0, 4).toList();
-    if (listEquals(header, Constants.zipHeader)) {
-      return _readZip(bytes);
-    }
-    return utf8.decode(bytes);
-  }
-  on Exception catch (_) {
-    return null;
-  }
-}
-
-String? _readZip(List<int> bytes) {
-  final zip = ZipDecoder().decodeBytes(bytes);
-  return zip.isNotEmpty ? utf8.decode(zip.first.content) : null;
-}

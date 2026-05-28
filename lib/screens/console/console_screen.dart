@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:log_viewer/constants.dart';
-import 'package:log_viewer/providers/console_manager.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/screens/console/tabs/console_tab.dart';
 import 'package:log_viewer/screens/console/tabs/diagnostics_tabs.dart';
@@ -12,29 +11,14 @@ import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:provider/provider.dart';
 
-class ConsoleScreen extends StatelessWidget {
+class ConsoleScreen extends StatefulWidget {
   const ConsoleScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ModManager()),
-        ChangeNotifierProvider(create: (context) => ConsoleManager(context.read<ModManager>().mods)),
-      ],
-      child: const ConsoleScreenState(),
-    );
-  }
+  State<ConsoleScreen> createState() => _ConsoleScreenState();
 }
 
-class ConsoleScreenState extends StatefulWidget {
-  const ConsoleScreenState({super.key});
-
-  @override
-  State<ConsoleScreenState> createState() => _ConsoleScreenState();
-}
-
-class _ConsoleScreenState extends State<ConsoleScreenState> with SingleTickerProviderStateMixin {
+class _ConsoleScreenState extends State<ConsoleScreen> with SingleTickerProviderStateMixin {
   late final ModManager _modManager;
   late final TabController _tabController;
   final _summaryFocusNode = FocusNode(debugLabel: 'summary-main');

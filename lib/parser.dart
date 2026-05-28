@@ -178,26 +178,26 @@ class Parser {
       }
 
       _createSummary();
+
+      if (events.isNotEmpty) {
+        return {
+          'success': true,
+          'summary': summary,
+          'mods': mods,
+          'events': events,
+        };
+      }
+      return {
+        'success': false,
+      };
     }
     on Exception catch (_) {
       return {
         'success': false,
       };
     }
-
-    return {
-      'success': true,
-      'summary': summary,
-      'mods': mods,
-      'events': events,
-    };
   }
 }
-
-// TODO: Is there a better way to temporarily keep the data in memory without resorting to this?
-Map<String, dynamic> parsedData = {
-  'success': false,
-};
 
 @pragma('vm:entry-point')
 @isolateManagerCustomWorker
