@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:log_viewer/constants.dart';
-import 'package:log_viewer/main.dart';
 import 'package:log_viewer/providers/console_manager.dart';
 import 'package:log_viewer/providers/loading_provider.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
@@ -15,7 +14,9 @@ import 'package:super_clipboard/super_clipboard.dart' show SimpleFileFormat;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final List<String> args;
+
+  const HomeScreen({super.key, required this.args});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -31,8 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadingProvider = context.read<LoadingProvider>();
     _loadingProvider.addListener(_handleSelectedFile);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (MyApp.args.isNotEmpty) {
-        _loadingProvider.loadFromFile(MyApp.args[0]);
+      if (widget.args.isNotEmpty) {
+        _loadingProvider.loadFromFile(widget.args[0]);
       }
     });
   }

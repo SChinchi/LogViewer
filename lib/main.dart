@@ -8,15 +8,13 @@ import 'package:provider/provider.dart';
 void main(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
   Settings.init();
-  runApp(MyApp(args: args));
+  runApp(LogViewer(args: args));
 }
 
-class MyApp extends StatelessWidget {
-  static late List<String> args;
+class LogViewer extends StatelessWidget {
+  final List<String> args;
 
-  MyApp({super.key, args}) {
-    MyApp.args = args;
-  }
+  const LogViewer({super.key, required this.args});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +23,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.theme,
       home: ChangeNotifierProvider(
         create: (_) => LoadingProvider(),
-        builder: (context, _) => const HomeScreen(),
+        builder: (context, _) => HomeScreen(args: args),
       ),
     );
   }
