@@ -2,14 +2,11 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:log_viewer/constants.dart';
+import 'package:log_viewer/filters/exclude_filter.dart';
+import 'package:log_viewer/filters/range_filter.dart';
+import 'package:log_viewer/filters/repeat_filter.dart';
 import 'package:log_viewer/models/event.dart';
 import 'package:log_viewer/models/mod.dart';
-
-final _consoleSearchFilterPattens = [
-  r'\s*(?<exclude>exclude:(?<exclude_term>\(.*\)|[^(\s]\S*))\s*',
-  r'\s*(?<range>range:(?<r0>-?\d*)\.\.(?<r1>-?\d*))\s*',
-  r'\s*(?<repeat>repeat:(?<repeat_num>\d+))\s*'
-];
 
 class ConsoleManager extends ChangeNotifier {
   ConsoleManager(Map<String, dynamic> data, List<Mod> mods) {
@@ -23,6 +20,8 @@ class ConsoleManager extends ChangeNotifier {
     }
     filteredEvents.addAll(events);
     summary = data['summary'];
+
+    _rangeFilter.length = events.length;
   }
 
   @override
@@ -35,9 +34,16 @@ class ConsoleManager extends ChangeNotifier {
     super.dispose();
   }
 
-  static final _filterPattern = RegExp('^(${_consoleSearchFilterPattens.join('|')})', caseSensitive: false);
+  final _excludeFilter = ExcludeFilter();
+  final _rangeFilter = RangeFilter(startIndex, endIndex);
+  final _repeatFilter = RepeatFilter();
+  final _allFilters = [
+    ExcludeFilter.pattern.pattern,
+    RangeFilter.pattern.pattern,
+    RepeatFilter.pattern.pattern,
+  ];
+  late final _filterPattern = RegExp('^(${_allFilters.join('|')})*', caseSensitive: false);
 
-  static const intMin = ~(-1 >>> 1);
   static const startIndex = 0;
   static const endIndex = 0;
 
@@ -98,67 +104,45 @@ class ConsoleManager extends ChangeNotifier {
     return _severity;
   }
 
+  bool _tryUpdateExcludeFilter(String text) {
+    _excludeFilter.update(text);
+    final hasUpdated = _excludeFilter.regex.pattern != _excludePattern.pattern;
+    _excludePattern = _excludeFilter.regex;
+    return hasUpdated;
+  }
+
+  bool _tryUpdateRangeFilter(String text) {
+    _rangeFilter.update(text);
+    final hasUpdated = _rangeFilter.eventStart != _eventStart || _rangeFilter.eventEnd != _eventEnd;
+    _eventStart = _rangeFilter.eventStart;
+    _eventEnd = _rangeFilter.eventEnd;
+    return hasUpdated;
+  }
+
+  bool _tryUpdateRepeatFilter(String text) {
+    _repeatFilter.update(text);
+    final hasUpdated = _repeatFilter.value != _repeatThreshold;
+    _repeatThreshold = _repeatFilter.value;
+    return hasUpdated;
+  }
+
   void setSearchString(String s) {
     _searchString = s;
-    s = s.toLowerCase();
     var recalculateFilters = false;
-    var match = _filterPattern.firstMatch(s);
-    final matches = <String, List<String?>>{};
-    while (match != null) {
-      if (match.namedGroup('exclude') != null) {
-        matches['exclude'] = [match.namedGroup('exclude_term')];
-      } else if (match.namedGroup('range') != null) {
-        matches['range'] = [match.namedGroup('r0'), match.namedGroup('r1')];
-      } else if (match.namedGroup('repeat') != null) {
-        matches['repeat'] = [match.namedGroup('repeat_num')];
-      }
-      s = s.substring(match.group(0)!.length);
-      match = _filterPattern.firstMatch(s);
+    final filterMatches = _filterPattern.firstMatch(s);
+    if (filterMatches != null) {
+      final filters = filterMatches.group(0)!;
+      recalculateFilters |= _tryUpdateExcludeFilter(filters);
+      recalculateFilters |= _tryUpdateRangeFilter(filters);
+      recalculateFilters |= _tryUpdateRepeatFilter(filters);
+      s = s.substring(filters.length);
     }
-    if (matches['exclude'] != null) {
-      try {
-        final excludeTerm = matches['exclude']![0]!;
-        if (excludeTerm != _excludePattern.pattern) {
-          _excludePattern = RegExp(excludeTerm, caseSensitive: false);
-          recalculateFilters = true;
-        }
-      } on FormatException catch (_) {
-        // Capturing each keystroke of the search means an invalid regex is possible
-      }
-    } else {
-      recalculateFilters |= _excludePattern.pattern.isNotEmpty;
-      _excludePattern = RegExp('', caseSensitive: false);
-    }
-    if (matches['range'] != null) {
-      final r0 = matches['range']![0];
-      final r1 = matches['range']![1];
-      var start = r0 != null ? int.tryParse(r0) ?? startIndex : startIndex;
-      start = start >= 0 ? min(start, events.length) : max(startIndex, events.length+start);
-      var end = r1 != null ? int.tryParse(r1) ?? intMin : intMin;
-      end = end > 0 ? max(end-events.length, -events.length) : end == intMin ? startIndex : max(-events.length, end);
-      recalculateFilters |= start != _eventStart || end != _eventEnd;
-      _eventStart = start;
-      _eventEnd = end;
-    } else {
-      recalculateFilters |= _eventStart != startIndex || _eventEnd != endIndex;
-      _eventStart = startIndex;
-      _eventEnd = endIndex;
-    }
-    if (matches['repeat'] != null) {
-      final repeatValue = int.parse(matches['repeat']![0]!);
-      if (repeatValue != _repeatThreshold) {
-        _repeatThreshold = repeatValue;
-        recalculateFilters = true;
-      }
-    } else {
-      recalculateFilters |= _repeatThreshold != 0;
-      _repeatThreshold = 0;
-    }
+
     if (s != _searchPattern.pattern) {
       try {
         _searchPattern = RegExp(s, caseSensitive: false);
         recalculateFilters = true;
-      } on FormatException catch (_) {
+      } on FormatException {
         // Capturing each keystroke of the search means an invalid regex is possible
       }
     }
