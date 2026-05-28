@@ -1,7 +1,7 @@
 import 'filter.dart';
 
 class ExcludeFilter implements Filter{
-  static final pattern = RegExp(r'\s*(?<exclude>exclude:(?<exclude_term>\(.*\)|[^(\s]\S*))\s*', caseSensitive: false);
+  static final pattern = RegExp(r'\s*(?<exclude>exclude:(?<exclude_term>\(.*?\)|[^(\s]\S*))\s*', caseSensitive: false);
   var regex = RegExp('', caseSensitive: false);
 
   @override
