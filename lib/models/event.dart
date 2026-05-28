@@ -24,7 +24,7 @@ class Event {
     this.message = data.message;
     this.fullString = data.fullString;
     fullStringNoPrefix = data.fullStringNoPrefix;
-    color = (data.color == null) ? color = AppTheme.primaryColor : Color(data.color!);
+    color = (data.color == null) ? AppTheme.primaryColor : Color(data.color!);
     index = data.index;
     lineCount = data.lineCount;
     repeat = data.repeat;
@@ -51,7 +51,7 @@ class Event {
     fullString = data['fullString'];
     fullStringNoPrefix = data['fullStringNoPrefix'];
     final colorValue = data['color'] as int?;
-    color = (colorValue == null) ? color = AppTheme.primaryColor : Color(colorValue);
+    color = (colorValue == null) ? AppTheme.primaryColor : Color(colorValue);
     index = data['index'] as int;
     lineCount = data['lineCount'] as int;
     repeat = data['repeat'] as int;
