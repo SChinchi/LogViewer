@@ -190,10 +190,10 @@ class Parser {
       return {
         'success': false,
       };
-    }
-    on Exception catch (_) {
+    } catch (_) {
       return {
         'success': false,
+        'error': Constants.parseError2,
       };
     }
   }

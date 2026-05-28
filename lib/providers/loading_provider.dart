@@ -58,8 +58,7 @@ class LoadingProvider extends ChangeNotifier {
 
   void loadFromBytes(List<int> bytes) {
     _startLoading();
-    final header = bytes.getRange(0, 4).toList();
-    if (listEquals(header, Constants.zipHeader)) {
+    if (bytes.length >= Constants.zipHeader.length && listEquals(bytes.getRange(0, 4).toList(), Constants.zipHeader)) {
       loadFromZip(bytes);
     } else {
       try {
@@ -73,7 +72,14 @@ class LoadingProvider extends ChangeNotifier {
   void loadFromZip(List<int> bytes) {
     _startLoading();
     final zip = ZipDecoder().decodeBytes(bytes);
-    final text = zip.isNotEmpty ? utf8.decode(zip.first.content) : null;
+    String? text;
+    if (zip.isNotEmpty) {
+      try {
+        text = utf8.decode(zip.first.content);
+      } on FormatException {
+        text = null;
+      }
+    }
     parseText(text);
   }
 
@@ -108,8 +114,8 @@ class LoadingProvider extends ChangeNotifier {
     data = jsonDecode(output);
 
     if (data['success'] != true) {
-      data.clear();
       errorMessage = data['error'] ?? Constants.parseError;
+      data.clear();
     }
     notifyListeners();
   }

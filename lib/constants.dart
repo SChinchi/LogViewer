@@ -14,6 +14,7 @@ class Constants {
   static const loadingFileText = 'Loading file';
   static const loadingProgressText = 'Parsing';
   static const parseError = 'Failed to parse file; empty or not a log.';
+  static const parseError2 = 'Unexpected error during parsing. Report this to the developer with the file attached.';
   static const searchText = 'Search';
   static const buttonOk = 'OK';
   static const buttonCancel = 'Cancel';
