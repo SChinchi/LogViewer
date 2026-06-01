@@ -31,7 +31,7 @@ class Constants {
   ];
 
   static const diagnosticsOutdated = 'Outdated Mods';
-  static const diagnosticsDependencies = 'Missing Dependencies & Incompatibilities';
+  static const diagnosticsSkippedMods = 'Skipped Mods';
   static const diagnosticsCrashingMods = 'Mods Crashing On Awake';
   static const diagnosticsBadHooks = 'Flawed Code Modifications';
   static const diagnosticsStuckLoading = 'Stuck Loading x%';

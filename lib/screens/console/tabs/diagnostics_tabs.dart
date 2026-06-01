@@ -25,7 +25,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
   late final ConsoleManager _consoleManager;
   final _scrollController = ScrollController(debugLabel: 'diagnostics');
   final CategoryItems _outdatedMods = CategoryItems();
-  final CategoryItems _dependencyIssues = CategoryItems();
+  final CategoryItems _skippedMods = CategoryItems();
   final CategoryItems _modsCrashingOnAwake = CategoryItems();
   final CategoryItems _hookFails = CategoryItems();
   final CategoryItems _stuckLoading = CategoryItems();
@@ -49,7 +49,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
     Settings.useModManifest.removeListener(_onSettingChanged);
     _scrollController.dispose();
     _outdatedMods.dispose(true);
-    _dependencyIssues.dispose();
+    _skippedMods.dispose();
     _modsCrashingOnAwake.dispose(true);
     _hookFails.dispose();
     _stuckLoading.dispose();
@@ -61,11 +61,20 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
   void _onSettingChanged() => setState(() {});
 
   void _analyse() {
-    final missingDependency = RegExp(r'^Could not load \[.*\] because it has missing dependencies:');
-    final incompatibleDependency = RegExp(r'^Could not load \[.*\] because it is incompatible with:');
-    final skippingOlder = RegExp(r'^Skipping \[.*\] because a newer version exists');
-    final skippingInvalid = RegExp(r'^Skipping \[.*\] because it has a dependency that was not loaded');
-    final errorLoading = RegExp(r'^Error loading \[.*\]');
+    final bepInExPatterns = [
+      r'^Skipping over type \[.*?\] as no metadata attribute is specified',
+      r'^Skipping type \[.*?\] because its GUID \[.*?\] is of an illegal format',
+      r'^Skipping type \[.*?\] because its version is invalid',
+      r'^Skipping type \[.*?\] because its name is null',
+      r'^Skipping \[.*?\] because a plugin with a similar GUID \(.*?\) has been already loaded',
+      r'^Skipping \[.*?\] because a newer version exists',
+      r'^Skipping \[.*?\] because of process filters',
+      r'^Could not load \[.*?\] because it is incompatible with',
+      r'^Skipping \[.*?\] because it has a dependency that was not loaded',
+      r'^Could not load \[.*?\] because it has missing dependencies',
+      r'^Error loading \[.*?\]',
+    ];
+    final skippedMods = RegExp('(${bepInExPatterns.join('|')})');
     // Normally it appears as Chainloader:Start, but if it has been hooked Chainloader::Start
     final chainLoaderPattern = RegExp(r'BepInEx.Bootstrap.Chainloader:[:]?Start');
     // The game loads its content in a coroutine, but we want to filter other irrelevant ones.
@@ -84,12 +93,8 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
         currentModIndex = event.modIndex!;
       }
       if (event.source == 'BepInEx') {
-        if (missingDependency.firstMatch(event.message) != null
-            || incompatibleDependency.firstMatch(event.message) != null
-            || skippingOlder.firstMatch(event.message) != null
-            || skippingInvalid.firstMatch(event.message) != null
-            || errorLoading.firstMatch(event.message) != null) {
-          _dependencyIssues.add(event);
+        if (skippedMods.firstMatch(event.message) != null) {
+          _skippedMods.add(event);
         }
       }
       if (chainLoaderPattern.firstMatch(event.fullString) != null) {
@@ -134,7 +139,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
     _rebuildModsCrashingOnAwake();
     final data = <ExpandableList>[];
     _tryAddCategory(data, _outdatedMods, Constants.diagnosticsOutdated);
-    _tryAddCategory(data, _dependencyIssues, Constants.diagnosticsDependencies);
+    _tryAddCategory(data, _skippedMods, Constants.diagnosticsSkippedMods);
     _tryAddCategory(data, _modsCrashingOnAwake, Constants.diagnosticsCrashingMods);
     _tryAddCategory(data, _hookFails, Constants.diagnosticsBadHooks);
     _tryAddCategory(data, _stuckLoading, Constants.diagnosticsStuckLoading);

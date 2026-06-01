@@ -39,7 +39,7 @@ Available on:
 ### Diagnostics
 
 - Outdated Mods — mods not using the latest Thunderstore version (ignore if intentionally downpatched).
-- Missing Dependencies & Incompatibilities — mods that fail to load due to dependency problems.
+- Skipped Mods — mods that fail to load for any reasons (e.g., dependency issues).
 - Mods Crashing On Awake — errors originating from BepInEx.Bootstrap.Chainloader:Start() which may lead to further issues.
 - Flawed Code Modifications — errors with MMHOOK or Harmony patches indicating broken functionality.
 - Stuck Loading x% — errors causing the game to hang during loading.
