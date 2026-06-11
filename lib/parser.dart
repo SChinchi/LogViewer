@@ -22,7 +22,6 @@ class Event {
   late String fullStringNoPrefix;
   int? color;
   int index = -1;
-  late int lineCount;
   int repeat = 0;
   int? modIndex;
 
@@ -38,7 +37,6 @@ class Event {
     } else if (severity < 3) {
       color = _yellow;
     }
-    lineCount = fullString.split('\n').length;
 
     // Check for loading mod pattern
     if (source == 'BepInEx') {
@@ -62,7 +60,6 @@ class Event {
       'fullStringNoPrefix': fullStringNoPrefix,
       'color': color,
       'index': index,
-      'lineCount': lineCount,
       'repeat': repeat,
       'modIndex': modIndex,
     };

@@ -12,7 +12,6 @@ class Event {
   late String fullStringNoPrefix;
   late Color color;
   late int index;
-  late int lineCount;
   int repeat = 0;
   int? modIndex;
   final controller = ExpandableController();
@@ -26,7 +25,6 @@ class Event {
     fullStringNoPrefix = data.fullStringNoPrefix;
     color = (data.color == null) ? AppTheme.primaryColor : Color(data.color!);
     index = data.index;
-    lineCount = data.lineCount;
     repeat = data.repeat;
     modIndex = data.modIndex;
   }
@@ -39,7 +37,6 @@ class Event {
     fullStringNoPrefix = event.fullStringNoPrefix;
     color = event.color;
     index = event.index;
-    lineCount = event.lineCount;
     repeat = event.repeat;
     modIndex = event.modIndex;
   }
@@ -53,7 +50,6 @@ class Event {
     final colorValue = data['color'] as int?;
     color = (colorValue == null) ? AppTheme.primaryColor : Color(colorValue);
     index = data['index'] as int;
-    lineCount = data['lineCount'] as int;
     repeat = data['repeat'] as int;
     modIndex = data['modIndex'] as int?;
   }

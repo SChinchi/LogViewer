@@ -186,52 +186,67 @@ class _ExpandableContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxLines = Settings.consoleEventMaxLines.value;
     return ExpandableNotifier(
       controller: event.controller,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(5, 3, 5, 3),
-        child: Stack(
-          children: [
-            ScrollOnExpand(
-              scrollOnExpand: false,
-              scrollOnCollapse: true,
-              child: ExpandablePanel(
-                theme: const ExpandableThemeData(
-                  tapBodyToCollapse: true,
-                  tapBodyToExpand: true,
+        child: LayoutBuilder(builder: (context, constraints) {
+          final lineCount = _countTextLines(event, constraints.maxWidth);
+          final maxLines = Settings.consoleEventMaxLines.value;
+          return Stack(
+            children: [
+              ScrollOnExpand(
+                scrollOnExpand: false,
+                scrollOnCollapse: true,
+                child: ExpandablePanel(
+                  theme: const ExpandableThemeData(
+                    tapBodyToCollapse: true,
+                    tapBodyToExpand: true,
+                  ),
+                  collapsed: Text(
+                    event.fullString,
+                    style: TextStyle(color: event.color),
+                    maxLines: maxLines > 0 ? maxLines : null,
+                    overflow: TextOverflow.fade,
+                  ),
+                  expanded: Text(
+                    event.fullString,
+                    style: TextStyle(color: event.color),
+                  ),
+                  builder: (_, collapsed, expanded) {
+                    return Padding(
+                      padding: EdgeInsets.zero,
+                      child: Expandable(
+                        collapsed: collapsed,
+                        expanded: expanded,
+                        theme: const ExpandableThemeData(crossFadePoint: 0),
+                      ),
+                    );
+                  },
                 ),
-                collapsed: Text(
-                  event.fullString,
-                  style: TextStyle(color: event.color),
-                  maxLines: maxLines > 0 ? maxLines : null,
-                  overflow: TextOverflow.fade,
-                ),
-                expanded: Text(
-                  event.fullString,
-                  style: TextStyle(color: event.color),
-                ),
-                builder: (_, collapsed, expanded) {
-                  return Padding(
-                    padding: EdgeInsets.zero,
-                    child: Expandable(
-                      collapsed: collapsed,
-                      expanded: expanded,
-                      theme: const ExpandableThemeData(crossFadePoint: 0),
-                    ),
-                  );
-                },
               ),
-            ),
-            if (maxLines > 0 && event.lineCount > maxLines)
-              Positioned(
-                top: -10,
-                right: 5,
-                child: ExpandableIcon(theme: const ExpandableThemeData(iconColor: Colors.grey)),
-              ),
-          ],
-        ),
+              if (maxLines > 0 && lineCount > maxLines)
+                Positioned(
+                  top: -10,
+                  right: 5,
+                  child: ExpandableIcon(theme: const ExpandableThemeData(iconColor: Colors.grey)),
+                ),
+            ],
+          );
+        }),
       ),
     );
+  }
+
+  int _countTextLines(Event event, width) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: event.fullString,
+        style: TextStyle(color: event.color),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout(maxWidth: width);
+    return textPainter.computeLineMetrics().length;
   }
 }
