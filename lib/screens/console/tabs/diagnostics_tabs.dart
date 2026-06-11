@@ -48,9 +48,9 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
   void dispose() {
     Settings.useModManifest.removeListener(_onSettingChanged);
     _scrollController.dispose();
-    _outdatedMods.dispose(true);
+    _outdatedMods.dispose();
     _skippedMods.dispose();
-    _modsCrashingOnAwake.dispose(true);
+    _modsCrashingOnAwake.dispose();
     _hookFails.dispose();
     _stuckLoading.dispose();
     _missingMemberExceptions.dispose();
@@ -94,7 +94,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
       }
       if (event.source == 'BepInEx') {
         if (skippedMods.firstMatch(event.message) != null) {
-          _skippedMods.add(event);
+          _skippedMods.add(Event.clone(event));
         }
       }
       if (chainLoaderPattern.firstMatch(event.fullString) != null) {
@@ -104,13 +104,13 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
         _modsCrashingOnAwake.add(eventCopy);
       }
       if (stuckLoadingPattern.firstMatch(event.fullString) != null && event.severity < 2) {
-        _stuckLoading.add(event);
+        _stuckLoading.add(Event.clone(event));
       }
       if (flawedHookPattern.firstMatch(event.fullString) != null) {
-        _hookFails.add(event);
+        _hookFails.add(Event.clone(event));
       }
       if (missingPattern.firstMatch(event.message) != null && !encounteredExceptions.contains(event.fullStringNoPrefix)) {
-        _missingMemberExceptions.add(event);
+        _missingMemberExceptions.add(Event.clone(event));
         encounteredExceptions.add(event.fullStringNoPrefix);
       }
       if (event.repeat > 0 && event.severity < 2) {
@@ -121,7 +121,9 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
         }
       }
     }
-    _mostCommonRecurrentErrors.events.addAll(encounteredCommonErrors.values);
+    for (final event in encounteredCommonErrors.values) {
+      _mostCommonRecurrentErrors.add(Event.clone(event));
+    }
     _mostCommonRecurrentErrors.events.sort((event1, event2) => event2.repeat.compareTo(event1.repeat));
   }
 
@@ -203,12 +205,10 @@ class CategoryItems {
     events.clear();
   }
 
-  void dispose([bool disposeEventController = false]) {
+  void dispose() {
     controller.dispose();
-    if (disposeEventController) {
-      for (final event in events) {
-        event.dispose();
-      }
+    for (final event in events) {
+      event.dispose();
     }
     events.clear();
   }
