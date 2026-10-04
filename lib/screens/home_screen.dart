@@ -7,6 +7,7 @@ import 'package:log_viewer/providers/console_manager.dart';
 import 'package:log_viewer/providers/loading_provider.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/screens/console/console_screen.dart';
+import 'package:log_viewer/screens/settings_screen.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
 import 'package:provider/provider.dart';
@@ -78,6 +79,20 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text(Constants.appTitle,
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
+          actions: [
+            PopupMenuButton(
+              menuPadding: EdgeInsets.zero,
+              shadowColor: AppTheme.primaryColor,
+              onSelected: ((value) {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+              }),
+              itemBuilder: (BuildContext context) {
+                return Constants.menuOptions.map((String choice) {
+                  return PopupMenuItem(value: choice, child: Text(choice));
+                }).toList();
+              },
+            )
+          ],
         ),
         body: Column(
           children: [
