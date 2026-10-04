@@ -141,12 +141,12 @@ class _FilePickerState extends State<_FilePicker>{
         if (loadingProvider.isLoading) {
           return;
         }
-        final result = await FilePicker.pickFiles(allowMultiple: false, withData: true);
-        if (result != null) {
-          if (Environment.isWeb) {
-            loadingProvider.loadFromBytes(result.files.first.bytes!);
+        final file = await FilePicker.pickFile();
+        if (file != null) {
+          if (Environment.isWeb || Environment.isMobile) {
+            loadingProvider.loadFromBytes(await file.readAsBytes());
           } else {
-            loadingProvider.loadFromFile(result.files.first.xFile.path);
+            loadingProvider.loadFromFile(file.xFile.path);
           }
           if (Environment.isMobile) {
             FilePicker.clearTemporaryFiles();
