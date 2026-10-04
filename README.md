@@ -45,6 +45,7 @@ Available on:
 - Stuck Loading x% — errors causing the game to hang during loading.
 - Missing Member Exception — errors by outdated mods calling missing code.
 - Most Repeated Errors — consecutive error events sorted by frequency (descending).
+- Log Viewer Events - custom events injected by the app (e.g., trimmed file)
 
 ## How to build
 

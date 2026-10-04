@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isolate_manager/isolate_manager.dart';
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/parser.dart' as parser;
+import 'package:log_viewer/settings.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 enum DataReaderFileType {
@@ -36,13 +38,15 @@ class LoadingProvider extends ChangeNotifier {
     final file = File(path);
     if (await file.exists()) {
       final bytes = await file.readAsBytes();
-      loadFromBytes(bytes.toList());
+      loadFromBytes(bytes);
     }
   }
 
   Future<void> loadFromDroppedFile(DataReaderFile file, DataReaderFileType type) async {
     _startLoading();
-    final bytes = (await file.getStream().toList()).expand((x) => x).toList();
+    final builder = BytesBuilder();
+    await file.getStream().forEach((chunk) => builder.add(chunk));
+    final bytes = builder.toBytes();
     switch (type) {
       case DataReaderFileType.text:
         parseText(utf8.decode(bytes));
@@ -94,6 +98,8 @@ class LoadingProvider extends ChangeNotifier {
       return;
     }
 
+    text = _trimTextIfTooLong(text);
+
     final isolate = IsolateManager.createCustom(
       parser.parserTask,
       workerName: 'parserTask',
@@ -118,6 +124,32 @@ class LoadingProvider extends ChangeNotifier {
       data.clear();
     }
     notifyListeners();
+  }
+
+  String _trimTextIfTooLong(String text) {
+    final megabyte = 1024 * 1024;
+    final headLength = Settings.logHeadLength.value * megabyte;
+    final tailLength = Settings.logTailLength.value * megabyte;
+    final totalTrimLength = headLength + tailLength;
+    // If the trim length is 0, it means both values are unset and we don't want to trim anything.
+    if (totalTrimLength > 0 && text.length > totalTrimLength) {
+      var head = text.substring(0, headLength);
+      try {
+        final lastHeadMatch = parser.Parser.eventHeader.allMatches(head).last;
+        head = head.substring(0, lastHeadMatch.start);
+      } on StateError {
+        // Nothing found, so set this to empty; no need for it to be parsed again later.
+        head = '';
+      }
+      var tail = text.substring(text.length - tailLength);
+      final firstTailMatch = parser.Parser.eventHeader.firstMatch(tail);
+      if (firstTailMatch != null) {
+        tail = tail.substring(firstTailMatch.start);
+      }
+      final trimmedLength = (text.length - (head.length + tail.length)) / megabyte;
+      text = '$head[Warning: LogViewer] Trimmed ${trimmedLength.toStringAsFixed(2)} MB from this log...\n$tail';
+    }
+    return text;
   }
 
   bool get hasData => data['success'] == true;

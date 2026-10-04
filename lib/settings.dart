@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Settings {
+  static const keyLogHeadLength = 'log_head_length';
+  static const keyLogTailLength = 'log_tail_length';
   static const keyUseModManifest = 'use_mod_manifest';
   static const keyUseCutOffDate = 'use_cut_off_date';
   static const keyCutOffDate = 'cut_off_date';
@@ -12,6 +14,8 @@ class Settings {
   static const keyTextSizeCopyThreshold = 'text_size_copy_threshold';
 
   static late final SharedPreferencesWithCache _prefs;
+  static late final ValueNotifier<int> logHeadLength;
+  static late final ValueNotifier<int> logTailLength;
   static late final ValueNotifier<bool> useModManifest;
   static late final ValueNotifier<bool> useCutOffDate;
   static late final ValueNotifier<DateTime?> cutOffDate;
@@ -33,6 +37,8 @@ class Settings {
 
   static Future<void> init() async {
     _prefs = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
+    logHeadLength = ValueNotifier(_prefs.getInt(keyLogHeadLength) ?? 25);
+    logTailLength = ValueNotifier(_prefs.getInt(keyLogTailLength) ?? 5);
     useModManifest = ValueNotifier(_prefs.getBool(keyUseModManifest) ?? true);
     useCutOffDate = ValueNotifier(_prefs.getBool(keyUseCutOffDate) ?? false);
     cutOffDate = ValueNotifier(DateTime.tryParse(_prefs.getString(keyCutOffDate) ?? ''));
@@ -41,6 +47,26 @@ class Settings {
     mentionAiMods = ValueNotifier(_prefs.getBool(keyMentionAiMods) ?? true);
     consoleEventMaxLines = ValueNotifier(_prefs.getInt(keyConsoleEventMaxLines) ?? 7);
     textSizeCopyThreshold = ValueNotifier(_prefs.getInt(keyTextSizeCopyThreshold) ?? 2000);
+  }
+
+  static Future<void> setLogHeadLength(int value) async {
+    if (value < 0) {
+      value = 0;
+    }
+    if (logHeadLength.value != value) {
+      logHeadLength.value = value;
+      await _prefs.setInt(keyLogHeadLength, value);
+    }
+  }
+
+  static Future<void> setLogTailLength(int value) async {
+    if (value < 0) {
+      value = 0;
+    }
+    if (logTailLength.value != value) {
+      logTailLength.value = value;
+      await _prefs.setInt(keyLogTailLength, value);
+    }
   }
 
   static Future<void> setUseModManifest(bool value) async {

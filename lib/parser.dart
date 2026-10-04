@@ -68,7 +68,7 @@ class Event {
 
 class Parser {
   // The space at the end is intentional.
-  static final _eventHeader = RegExp('^(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] ', multiLine: true);
+  static final eventHeader = RegExp('^(.*)\\[(${Constants.logSeverity.join('|')})\\s*:\\s*(.*?)\\] ', multiLine: true);
 
   final summary = <List<dynamic>>[];
   final mods = <List<String>>[];
@@ -138,7 +138,7 @@ class Parser {
   Map<String, dynamic> parse(String text, IsolateManagerController<String, String> controller) {
     final trailingNewLines = RegExp(r'(\r\n|\r|\n)+$');
     try {
-      final matches = _eventHeader.allMatches(text).toList();
+      final matches = eventHeader.allMatches(text).toList();
       final total = matches.length;
       var progress = 0;
       for (var index = 0; index < matches.length; index++) {

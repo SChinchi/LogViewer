@@ -37,6 +37,7 @@ class Constants {
   static const diagnosticsStuckLoading = 'Stuck Loading x%';
   static const diagnosticsMissingMember = 'Missing Member Exception';
   static const diagnosticsRepeatErrors = 'Most Spammed Errors';
+  static const diagnosticsLogViewer = 'Log Viewer Events';
 
   static const settingsPage = 'Settings';
   static const menuOptions = [settingsPage];

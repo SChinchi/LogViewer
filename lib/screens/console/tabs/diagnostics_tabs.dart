@@ -31,6 +31,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
   final CategoryItems _stuckLoading = CategoryItems();
   final CategoryItems _missingMemberExceptions = CategoryItems();
   final CategoryItems _mostCommonRecurrentErrors = CategoryItems();
+  final CategoryItems _logViewerEvents = CategoryItems();
 
   @override
   bool get wantKeepAlive => true;
@@ -55,6 +56,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
     _stuckLoading.dispose();
     _missingMemberExceptions.dispose();
     _mostCommonRecurrentErrors.dispose();
+    _logViewerEvents.dispose();
     super.dispose();
   }
 
@@ -120,6 +122,9 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
           encounteredCommonErrors[event.fullStringNoPrefix] = event;
         }
       }
+      if (event.source == 'LogViewer') {
+        _logViewerEvents.add(Event.clone(event));
+      }
     }
     for (final event in encounteredCommonErrors.values) {
       _mostCommonRecurrentErrors.add(Event.clone(event));
@@ -147,6 +152,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
     _tryAddCategory(data, _stuckLoading, Constants.diagnosticsStuckLoading);
     _tryAddCategory(data, _missingMemberExceptions, Constants.diagnosticsMissingMember);
     _tryAddCategory(data, _mostCommonRecurrentErrors, Constants.diagnosticsRepeatErrors);
+    _tryAddCategory(data, _logViewerEvents, Constants.diagnosticsLogViewer);
     return AdvancedScrollable(
       controller: _scrollController,
       mainFocusNode: widget.focusNode,

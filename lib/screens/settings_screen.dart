@@ -19,10 +19,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   var _useModManifest = Settings.useModManifest.value;
   var _cutOffDateEnabled = Settings.useCutOffDate.value;
   var _mentionAiMods = Settings.mentionAiMods.value;
+  final _logTrimTextController = TextEditingController();
   final _whitelistTextController = TextEditingController();
   final _problematicTextController = TextEditingController();
   final _collapsibleTextController = TextEditingController();
   final _textSizeThresholdTextController = TextEditingController();
+  late int _logHeadLength;
+  late int _logTailLength;
   late String _whitelistOldText;
   late String _whitelistSubtitle;
   late String _problematicSubtitle;
@@ -33,6 +36,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _logHeadLength = Settings.logHeadLength.value;
+    _logTailLength = Settings.logTailLength.value;
     final whitelist = Settings.deprecatedAndOldWhitelist.value;
     _whitelistOldText = whitelist.join('\n');
     _whitelistTextController.text = _whitelistOldText;
@@ -49,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _scrollController.dispose();
     _focusNode.dispose();
+    _logTrimTextController.dispose();
     _whitelistTextController.dispose();
     _problematicTextController.dispose();
     _collapsibleTextController.dispose();
@@ -80,6 +86,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: SuperListView(
                   controller: _scrollController,
                   children: [
+                    SettingsSection(
+                      title: 'Log trimming',
+                      tiles: [
+                        ListTile(
+                          title: const Text('Head/Tail Length (MB)'),
+                          subtitle: Text('${_logHeadLength > 0 ? _logHeadLength.toString() : 'None'},${_logTailLength > 0 ? _logTailLength.toString() : 'None'}'),
+                          onTap: () async {
+                            final error = await showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (BuildContext context) {
+                                return NumberDialog(
+                                  title: 'Set (Head,Tail) File Trim Length (0 for None)',
+                                  textController: _logTrimTextController,
+                                  onFieldSubmitted: (value) {
+                                    if (_logTrimTextController.text.isEmpty) {
+                                      Navigator.pop(context);
+                                      return;
+                                    }
+                                    try {
+                                      final parts = _logTrimTextController.text.split(',');
+                                      setState(() {
+                                        if (parts.length == 1) {
+                                          _logHeadLength = parts[0].isEmpty ? 0 : int.parse(parts[0]);
+                                          _logTailLength = 0;
+                                        } else {
+                                          _logHeadLength = parts[0].isEmpty ? 0 : int.parse(parts[0]);
+                                          _logTailLength = parts[1].isEmpty ? 0 : int.parse(parts[1]);
+                                        }
+                                        _logTrimTextController.text = '';
+                                        Settings.setLogHeadLength(_logHeadLength);
+                                        Settings.setLogTailLength(_logTailLength);
+                                      });
+                                      Navigator.pop(context);
+                                    } on FormatException catch (e) {
+                                      _logTrimTextController.text = '';
+                                      Navigator.pop(context, e.message);
+                                    }
+                                  },
+                                  onTapCancel: () {
+                                    _logTrimTextController.text = '';
+                                    Navigator.pop(context);
+                                  },
+                                  onTapOK: () {
+                                    if (_logTrimTextController.text.isEmpty) {
+                                      Navigator.pop(context);
+                                      return;
+                                    }
+                                    try {
+                                      final parts = _logTrimTextController.text.split(',');
+                                      setState(() {
+                                        if (parts.length == 1) {
+                                          _logHeadLength = parts[0].isEmpty ? 0 : int.parse(parts[0]);
+                                          _logTailLength = 0;
+                                        } else {
+                                          _logHeadLength = parts[0].isEmpty ? 0 : int.parse(parts[0]);
+                                          _logTailLength = parts[1].isEmpty ? 0 : int.parse(parts[1]);
+                                        }
+                                        _logTrimTextController.text = '';
+                                        Settings.setLogHeadLength(_logHeadLength);
+                                        Settings.setLogTailLength(_logTailLength);
+                                      });
+                                      Navigator.pop(context);
+                                    } on FormatException catch (e) {
+                                      _logTrimTextController.text = '';
+                                      Navigator.pop(context, e.message);
+                                    }
+                                  },
+                                  customFilteringTextInput: RegExp('[0-9,]'),
+                                );
+                              },
+                            );
+                            if (error != null) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error as String)));
+                              }
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                     SettingsSection(
                       title: Constants.settingsSectionMods,
                       tiles: [
@@ -456,6 +543,7 @@ class NumberDialog extends StatelessWidget {
   final ValueChanged<String> onFieldSubmitted;
   final VoidCallback onTapCancel;
   final VoidCallback onTapOK;
+  final RegExp? customFilteringTextInput;
 
   const NumberDialog({
     super.key,
@@ -464,6 +552,7 @@ class NumberDialog extends StatelessWidget {
     required this.onFieldSubmitted,
     required this.onTapCancel,
     required this.onTapOK,
+    this.customFilteringTextInput,
   });
 
   @override
@@ -475,8 +564,7 @@ class NumberDialog extends StatelessWidget {
         controller: textController,
         keyboardType: TextInputType.number,
         inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-          FilteringTextInputFormatter.digitsOnly
+          FilteringTextInputFormatter.allow(customFilteringTextInput ?? RegExp(r'[0-9]'))
         ],
         onFieldSubmitted: onFieldSubmitted,
         maxLines: 1,
