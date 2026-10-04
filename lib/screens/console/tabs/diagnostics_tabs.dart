@@ -83,7 +83,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage>
     // appears in the stack trace.
     final stuckLoadingPattern = RegExp(r'(RoR2Application|FixSystemInitializer).*UnityEngine.SetupCoroutine.InvokeMoveNext', dotAll: true);
     final flawedHookPattern = RegExp(r'(MonoMod\.RuntimeDetour\.(IL)?Hook\.\.ctor|HarmonyLib\.PatchClassProcessor\.Patch)');
-    final missingPattern = RegExp(r'^Missing(Field|Method)Exception');
+    final missingPattern = RegExp(r'Missing(Field|Method)Exception');
     final encounteredExceptions = <String>{};
     final encounteredCommonErrors = <String, Event>{};
     var currentModIndex = 0;
