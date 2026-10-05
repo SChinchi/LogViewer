@@ -27,7 +27,7 @@ class ModManager extends ChangeNotifier {
     }
     updateModData();
 
-    Settings.useModManifest.addListener(notifyListeners);
+    Settings.useModManifest.addListener(updateModData);
     Settings.useCutOffDate.addListener(updateModData);
     Settings.cutOffDate.addListener(updateModData);
     Settings.deprecatedAndOldWhitelist.addListener(updateModData);
@@ -139,6 +139,9 @@ class ModManager extends ChangeNotifier {
         // Manual mods are not updated when we fetch Thunderstore data, so we do it... manually
         mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
         mod.isUnique = false;
+        if (mod.isProblematic) {
+          print('${mod.name}, ${mod.hasManifestEffective}');
+        }
       }
     }
   }
