@@ -51,6 +51,7 @@ class ModManager extends ChangeNotifier {
   final mods = <Mod>[];
   final filteredMods = <Mod>[];
   var isInSelectionMode = false;
+  Mod? singleSelection;
   // Some mods contain multiple plugins, which are loaded individually
   // but refer to the same manifest name.
   final _nameToMod = <String, List<Mod>>{};
@@ -118,7 +119,9 @@ class ModManager extends ChangeNotifier {
 
   void toggleSelected(Mod mod) {
     mod.isSelected = !mod.isSelected;
-    isInSelectionMode = mods.any((m) => m.isSelected);
+    final selectedMods = mods.where((m) => m.isSelected).toList();
+    isInSelectionMode = selectedMods.isNotEmpty;
+    singleSelection = selectedMods.length == 1 ? selectedMods.first : null;
     notifyListeners();
   }
 
@@ -128,6 +131,7 @@ class ModManager extends ChangeNotifier {
         mod.isSelected = false;
       }
       isInSelectionMode = false;
+      singleSelection = null;
       notifyListeners();
     }
   }
@@ -159,6 +163,7 @@ class ModManager extends ChangeNotifier {
       if (entry != null) {
         final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
         final categories = entry.categories;
+        final url = entry.url;
         mod.isDeprecated = !whitelisted && entry.isDeprecated == 1;
         mod.isOld = !whitelisted
             && cutOffDate != null
@@ -179,6 +184,11 @@ class ModManager extends ChangeNotifier {
           toUpdate.add(mod.fullName);
         } else {
           mod.categories = categories.split(';');
+        }
+        if (url == null) {
+          toUpdate.add(mod.fullName);
+        } else {
+          mod.url = url;
         }
       } else {
         toUpdate.add(mod.fullName);
@@ -203,6 +213,7 @@ class ModManager extends ChangeNotifier {
               if (modPlugins != null) {
                 final latestVersion = tsMod['versions'].first['version_number'];
                 final categories = (tsMod['categories'] as List).cast<String>();
+                final url = tsMod['package_url'];
                 for (final mod in modPlugins) {
                   final whitelisted = deprecatedAndOldWhitelist.contains(mod.fullName);
                   mod.isDeprecated = !whitelisted && tsMod['is_deprecated'];
@@ -216,6 +227,7 @@ class ModManager extends ChangeNotifier {
                   mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
                   mod.isLatestVersion = mod.version.toString() == latestVersion;
                   mod.categories = categories;
+                  mod.url = url;
                 }
                 final entry = Entry(
                   fullName: fullName,
@@ -224,6 +236,7 @@ class ModManager extends ChangeNotifier {
                   isDeprecated: tsMod['is_deprecated'] ? 1 : 0,
                   latestVersion: latestVersion,
                   categories: categories.join(';'),
+                  url: url,
                 );
                 DB.insertMod(entry);
                 toUpdate.remove(fullName);
@@ -255,6 +268,7 @@ class ModManager extends ChangeNotifier {
                 mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
                 mod.isLatestVersion = mod.version.toString() == entry.latestVersion;
                 mod.categories = categories;
+                mod.url = entry.url ?? 'Missing';
               }
             }
           }

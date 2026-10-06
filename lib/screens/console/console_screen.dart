@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:log_viewer/constants.dart';
+import 'package:log_viewer/models/mod.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
 import 'package:log_viewer/screens/console/tabs/console_tab.dart';
 import 'package:log_viewer/screens/console/tabs/diagnostics_tabs.dart';
@@ -61,9 +62,11 @@ class _ConsoleScreenState extends State<ConsoleScreen> with SingleTickerProvider
       appBar: AppBar(
         toolbarHeight: 35,
         actions: [
-          Selector<ModManager, bool>(
-            selector: (context, modManager) => modManager.isInSelectionMode,
-            builder: (context, isInSelectionMode, _) {
+          Selector<ModManager, (bool, Mod?)>(
+            selector: (context, modManager) => (modManager.isInSelectionMode, modManager.singleSelection),
+            builder: (context, data, _) {
+              final isInSelectionMode = data.$1;
+              final singleSelection = data.$2;
               return Row(
                 children: [
                   if (isInSelectionMode && _tabController.index == 1)
@@ -74,6 +77,15 @@ class _ConsoleScreenState extends State<ConsoleScreen> with SingleTickerProvider
                           _modManager.clearSelections();
                         },
                       ),
+                      if (singleSelection != null)
+                        IconButton(
+                          icon: const Icon(Icons.link),
+                          onPressed: () async {
+                            final url = singleSelection.url;
+                            await Clipboard.setData(ClipboardData(text: url));
+                            _modManager.clearSelections();
+                          },
+                        ),
                       IconButton(
                         icon: const Icon(Icons.copy),
                         onPressed: () async {

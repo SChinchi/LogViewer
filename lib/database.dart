@@ -57,6 +57,8 @@ class DB {
         break;
       case 3:
         await db.execute('ALTER TABLE ${Constants.tableName} ADD ${Entry.categoriesKey} TEXT');
+      case 4:
+        await db.execute('ALTER TABLE ${Constants.tableName} ADD ${Entry.urlKey} TEXT');
     }
   }
 
@@ -92,6 +94,7 @@ class DB {
         isDeprecated: kvp[Entry.deprecatedKey] as int,
         latestVersion: kvp[Entry.latestVersionKey] as String?,
         categories: kvp[Entry.categoriesKey] as String?,
+        url: kvp[Entry.urlKey] as String?,
       );
     }
     return result;
@@ -105,12 +108,14 @@ class Entry {
   static const deprecatedKey = 'deprecated';
   static const latestVersionKey = 'latest_version';
   static const categoriesKey = 'categories';
+  static const urlKey = 'url';
   final String fullName;
   final String dateTs;
   final String dateDb;
   final int isDeprecated;
   final String? latestVersion;
   final String? categories;
+  final String? url;
 
   Entry({
     required this.fullName,
@@ -119,6 +124,7 @@ class Entry {
     required this.isDeprecated,
     required this.latestVersion,
     required this.categories,
+    required this.url,
   });
 
   Map<String, Object?> serialise() {
@@ -129,6 +135,7 @@ class Entry {
       deprecatedKey: isDeprecated,
       latestVersionKey: latestVersion,
       categoriesKey: categories,
+      urlKey: url,
     };
   }
 }
