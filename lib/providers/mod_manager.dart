@@ -143,9 +143,6 @@ class ModManager extends ChangeNotifier {
         // Manual mods are not updated when we fetch Thunderstore data, so we do it... manually
         mod.isProblematic = problematicModlist.contains(mod.guid) || !mod.hasManifestEffective;
         mod.isUnique = false;
-        if (mod.isProblematic) {
-          print('${mod.name}, ${mod.hasManifestEffective}');
-        }
       }
     }
   }
