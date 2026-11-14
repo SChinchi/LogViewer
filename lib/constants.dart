@@ -18,6 +18,7 @@ class Constants {
   static const searchText = 'Search';
   static const buttonOk = 'OK';
   static const buttonCancel = 'Cancel';
+  static const buttonClose = 'Close';
 
   static const noManifestModName = 'Unknown';
 
@@ -49,6 +50,7 @@ class Constants {
   ];
 
   static const eventContextMenuCopy = 'Copy';
+  static const eventContextMenuSelect = 'Select text';
   static const eventContextMenuGoto = 'Go to';
 
   static const settingsSectionMods = 'Mod list';

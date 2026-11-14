@@ -166,6 +166,27 @@ class _ExpandableCardState extends State<ExpandableCard> with SingleTickerProvid
             await clipboard.write([item]);
           },
         ),
+        PopupMenuItem(
+          child: const Text(Constants.eventContextMenuSelect),
+          onTap: () async {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Select text to copy'),
+                  backgroundColor: AppTheme.dialogBackgroundColor,
+                  content: SelectableText(text),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(Constants.buttonClose),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
         if (widget.event.index >= 0)
           PopupMenuItem(
             child: const Text(Constants.eventContextMenuGoto),
