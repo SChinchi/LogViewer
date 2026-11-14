@@ -10,7 +10,7 @@ class Mod {
   late final Version version;
   late final int index;
   int labels = ModLabel.none;
-  late final String url;
+  String url = 'Not set';
 
   List<String> get categories => _categories;
   set categories(List<String> value) {
