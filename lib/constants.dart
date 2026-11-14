@@ -64,6 +64,10 @@ class Constants {
   static const exportFilename = 'export.zip';
   static const emptyModList = 'Cannot create a profile code without a mod list.';
 
+  static const modDiffNoMods = 'No mods found. Are you sure this a log file?';
+  static const modDiffOK = 'No differences found.';
+  static const modDiffIssuesFound = 'Differences found, copied to clipboard.';
+
   static const noConnectionError = 'No internet permission or connection with internet access.';
   static const profileCodeError = 'This platform does not currently support creating a profile code.';
   static const copyFileError = 'This platform does not currently support copying to file. '

@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:log_viewer/constants.dart';
 import 'package:log_viewer/providers/mod_manager.dart';
+import 'package:log_viewer/settings.dart';
 import 'package:log_viewer/themes/themes.dart';
 import 'package:log_viewer/utils.dart';
 import 'package:log_viewer/widgets/advanced_scrollable.dart';
@@ -25,6 +28,14 @@ class ModListPage extends StatefulWidget {
 }
 
 class _ModListPageState extends State<ModListPage> with AutomaticKeepAliveClientMixin {
+  // Either "Manifest" line (with "Loading" line if it exists), else just "Loading" line.
+  // [\d:.]+ is to account for the timestamp in front of the second line with AsyncLoggers.
+  static final _modPattern = RegExp('\\[Info\\s*:\\s*BepInEx\\] TS Manifest: (.*)'
+      '(?:\\r?\\n(?:\\[[\\d:.]+\\] )?\\[Info\\s*:\\s*BepInEx\\] Loading \\[(.*)\\])?'
+      '|\\[Info\\s*:\\s*BepInEx\\] Loading \\[(.*)\\]',
+      multiLine: true
+  );
+
   late final ModManager _modManager;
   final _textFocusNode = FocusNode(debugLabel: 'modlist-search');
   final _dropdownFocusNode = FocusNode(debugLabel: 'modlist-dropdown');
@@ -161,6 +172,60 @@ class _ModListPageState extends State<ModListPage> with AutomaticKeepAliveClient
                       Padding(
                         padding: const EdgeInsets.all(10),
                         child: FloatingActionButton(
+                          heroTag: 'mod_diff',
+                          child: const Icon(Icons.compare_arrows_rounded),
+                          onPressed: () async {
+                            final file = await FilePicker.pickFile();
+                            if (file != null) {
+                              var text = _loadText(await file.readAsBytes());
+                              // We only scan the first 100 MB. A very long file may lead to more matches than
+                              // the int max value, which can lead to an error. This size limit is more than
+                              // generous for ensuring we are past any mod loading phase in the log file.
+                              final sizeLimit = 100 * 1024 * 1024;
+                              if (text.length > sizeLimit) {
+                                text = text.substring(0, sizeLimit);
+                              }
+                              final modNames = _parseModNamesFromLogText(text);
+                              final originalModNames = _modManager.mods.map((mod) => mod.name).toSet();
+                              var found1 = originalModNames.difference(modNames);
+                              var found2 = modNames.difference(originalModNames);
+                              if (context.mounted) {
+                                if (modNames.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text(Constants.modDiffNoMods)));
+                                } else if (found1.isEmpty && found2.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text(Constants.modDiffOK)));
+                                } else {
+                                  final stringBuffer = StringBuffer();
+                                  if (found1.isNotEmpty) {
+                                    stringBuffer.writeln('ONLY IN PRIMARY FILE');
+                                    stringBuffer.writeln('--------------------');
+                                    stringBuffer.write(found1.join('\n'));
+                                  }
+                                  if (found2.isNotEmpty) {
+                                    if (found1.isNotEmpty) {
+                                      stringBuffer.writeln('\n');
+                                    }
+                                    stringBuffer.writeln('ONLY IN SECONDARY FILE');
+                                    stringBuffer.writeln('----------------------');
+                                    stringBuffer.write(found2.join('\n'));
+                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text(Constants.modDiffIssuesFound)));
+                                  await Clipboard.setData(ClipboardData(text: stringBuffer.toString()));
+                                }
+                              }
+                              if (Environment.isMobile) {
+                                FilePicker.clearTemporaryFiles();
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: FloatingActionButton(
                           heroTag: 'profile',
                           child: const Icon(Icons.account_circle_rounded),
                           onPressed: () async {
@@ -243,5 +308,51 @@ class _ModListPageState extends State<ModListPage> with AutomaticKeepAliveClient
         ],
       ),
     );
+  }
+
+  static String _loadText(List<int> bytes) {
+    // TODO: Should probably refactor this with LoadingProvider.loadFromBytes that does a very similar thing.
+    var finalBytes = bytes;
+    if (bytes.length >= Constants.zipHeader.length && listEquals(bytes.getRange(0, 4).toList(), Constants.zipHeader)) {
+      final zip = ZipDecoder().decodeBytes(bytes);
+      if (zip.isNotEmpty) {
+        finalBytes = zip.first.content;
+      }
+    }
+    try {
+      return utf8.decode(finalBytes);
+    } on FormatException {
+      return '';
+    }
+  }
+
+  static Set<String> _parseModNamesFromLogText(String text) {
+    final matches = _modPattern.allMatches(text);
+    final modData = <(String, String)>[];
+    final manifestCounter = <String, int>{};
+    for (final match in matches) {
+      final manifestName = match.group(1) ?? Constants.noManifestModName;
+      final bepInExName = match.group(2) ?? match.group(3) ?? '';
+      modData.add((manifestName, bepInExName));
+      if (!manifestCounter.containsKey(manifestName)) {
+        manifestCounter[manifestName] = 1;
+      } else {
+        manifestCounter[manifestName] = manifestCounter[manifestName]! + 1;
+      }
+    }
+    final modNames = <String>{};
+    for (final mod in modData) {
+      // Replicating the naming pattern that Mod.name also uses.
+      if (Settings.useModManifest.value) {
+        if (mod.$1 != Constants.noManifestModName && manifestCounter[mod.$1]! == 1) {
+          modNames.add(mod.$1);
+        } else {
+          modNames.add('${mod.$1} [${mod.$2}]');
+        }
+      } else {
+        modNames.add(mod.$2);
+      }
+    }
+    return modNames;
   }
 }
